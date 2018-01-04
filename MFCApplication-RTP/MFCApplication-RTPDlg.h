@@ -5,6 +5,7 @@
 #pragma once
 
 #include "myrtp.h"
+#include "myprotocol.h"
 
 
 // CMFCApplicationRTPDlg ¶Ô»°¿ò
@@ -38,5 +39,8 @@ public:
 	afx_msg void OnBnClickedButton1();
 	MyRTP *channel1RTP;
 	MyRTP *channel2RTP;
+	JProtocol *mastergate;
+	
 
+	afx_msg void OnBnClickedButton_TCPInit();
 };

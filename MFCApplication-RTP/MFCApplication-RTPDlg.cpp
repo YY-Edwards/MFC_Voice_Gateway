@@ -57,6 +57,7 @@ CMFCApplicationRTPDlg::CMFCApplicationRTPDlg(CWnd* pParent /*=NULL*/)
 	WSAStartup(MAKEWORD(2, 2), &dat);//init socket
 
 	channel1RTP = new MyRTP;
+	mastergate = new JProtocol;
 	//myreceiver = new MyRTPReceiver;
 
 
@@ -67,6 +68,8 @@ CMFCApplicationRTPDlg::~CMFCApplicationRTPDlg()
 	WSACleanup();
 	if (channel1RTP->IsActive())channel1RTP->BYEDestroy(RTPTime(0, 10), "Time's up", 9);
 	if (channel1RTP != NULL)delete channel1RTP;
+	mastergate->CloseMater();
+	if (mastergate != NULL)delete mastergate;
 
 }
 
@@ -80,6 +83,7 @@ BEGIN_MESSAGE_MAP(CMFCApplicationRTPDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(IDC_BUTTON1, &CMFCApplicationRTPDlg::OnBnClickedButton1)
+	ON_BN_CLICKED(IDC_BUTTON2, &CMFCApplicationRTPDlg::OnBnClickedButton_TCPInit)
 END_MESSAGE_MAP()
 
 
@@ -194,6 +198,19 @@ void CMFCApplicationRTPDlg::OnBnClickedButton1()
 	//channe21RTP->Rtp_Init(56500, 58400, 2012);
 
 	TRACE(_T(" channel1RTP->Rtp_Init okay!\r\n"));
+	
+	// TODO:  在此添加控件通知处理程序代码
+}
+
+
+void CMFCApplicationRTPDlg::OnBnClickedButton_TCPInit()
+{
+	
+	mastergate->Start();
+	
+	CWnd *pWnd1 = GetDlgItem(IDC_BUTTON2);
+	pWnd1->EnableWindow(FALSE);
+	
 	
 	// TODO:  在此添加控件通知处理程序代码
 }

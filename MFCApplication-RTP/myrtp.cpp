@@ -25,6 +25,15 @@ MyRTP::~MyRTP()
 	
 }
 
+//UINT MyRTP::OnPollThread(LPVOID p)
+//{
+//	MyRTP *arg = (MyRTP*)p;
+//	if (arg != NULL)
+//	{
+//		arg->OnPollThreadFunc();
+//	}
+//	return 0;
+//}
 int MyRTP::OnPollThread(void* p)
 {
 	MyRTP *arg = (MyRTP*)p;
@@ -126,6 +135,7 @@ void MyRTP::Rtp_Init(uint16_t portbase, uint16_t destport, uint32_t ssrc)
 	CheckError(status);
 
 	//poll_thread_isactive = true;
+	//CWinThread* MyThread = AfxBeginThread(OnPollThread, this, THREAD_PRIORITY_NORMAL, 0, 0, NULL);
 	rx_rtp_handle = (HANDLE)_beginthreadex(NULL, 0, (unsigned int(__stdcall*)(void *))OnPollThread, this, 0, NULL);
 	if (rx_rtp_handle == NULL)
 	{

@@ -103,6 +103,7 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Common.h" />
     <ClInclude Include="MFCApplication-RTP.h" />
     <ClInclude Include="MFCApplication-RTPDlg.h" />
     <ClInclude Include="myprotocol.h" />

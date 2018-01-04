@@ -43,6 +43,7 @@ public:
 protected:
 
 		static int OnPollThread(void* p);
+		//static UINT OnPollThread(LPVOID p);
 		void OnPollThreadFunc();
 		void ProcessRTPPacket(const RTPSourceData &srcdat,const RTPPacket &rtppack);	
 	
@@ -55,6 +56,7 @@ protected:
 		uint32_t payloaddatalength;
 		uint8_t* payloaddata;
 		HANDLE rx_rtp_handle;
+	
 		
 };
 

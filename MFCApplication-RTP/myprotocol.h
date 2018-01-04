@@ -1,5 +1,5 @@
 #ifndef MYPROTOCOL_H
-
+#include "Common.h"
 #include "myrtp.h"
 
 class JProtocol
@@ -18,7 +18,7 @@ public:
 	回调接口
 	设置回调函数
 	*/
-	void SetCallBackFunc(void(*callBackFunc)(int, ResponeData));
+	//void SetCallBackFunc(void(*callBackFunc)(int, ResponeData));
 
 	/*
 	连接回复
@@ -58,20 +58,31 @@ public:
 	void CallEndNotify();
 
 	/*
-	断开连接
+	关闭服务器端
 	*/
-	void DisConnect();
+	void CloseMater();
 
 
 
 private:
 
+	static int ListenThread(void* p);
+	//static UINT OnPollThread(LPVOID p);
+	void ListenThreadFunc();
+	void CreateListenThread();
 	/*
 	socket初始化
 	*/
 	bool socketopen;
+	bool islistenstatus;
 	bool InitSocket();
-	bool CloseSocket(int sockfd);
+	bool CloseSocket(SOCKET sockfd);
+	SOCKET serversoc;
+	//SOCKET clientsoc;
+	struct sockaddr_in my_addr; /* loacl */
+	struct sockaddr_in remote_addr; //client_address
+	HANDLE listen_thread_handle;
+	char recvbuf[BUFLENGTH];
 
 };
 
