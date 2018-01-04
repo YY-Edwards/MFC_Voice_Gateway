@@ -56,16 +56,18 @@ CMFCApplicationRTPDlg::CMFCApplicationRTPDlg(CWnd* pParent /*=NULL*/)
 	WSADATA dat;
 	WSAStartup(MAKEWORD(2, 2), &dat);//init socket
 
-	myreceiver = new MyRTPReceiver;
-	mysender = new MyRTPSender;
+	channel1RTP = new MyRTP;
+	//myreceiver = new MyRTPReceiver;
+
 
 }
 
 CMFCApplicationRTPDlg::~CMFCApplicationRTPDlg()
 {
 	WSACleanup();
-	if (myreceiver!=NULL)delete myreceiver;
-	if (mysender != NULL)delete mysender;
+	if (channel1RTP->IsActive())channel1RTP->BYEDestroy(RTPTime(0, 10), "Time's up", 9);
+	if (channel1RTP != NULL)delete channel1RTP;
+
 }
 
 void CMFCApplicationRTPDlg::DoDataExchange(CDataExchange* pDX)
@@ -171,10 +173,27 @@ HCURSOR CMFCApplicationRTPDlg::OnQueryDragIcon()
 
 void CMFCApplicationRTPDlg::OnBnClickedButton1()
 {
-	
-	mysender->Rtp_Sender_Init(7020, 1379);
+	CWnd *pWnd1 = GetDlgItem(IDC_BUTTON1);
+	pWnd1->EnableWindow(FALSE);
 
-	TRACE(_T(" Rtp_Sender_Init okay!\r\n"));
+	channel1RTP->Rtp_Init(55500, 57400, 1973);
+	uint8_t silencebuffer[320];
+	for (int i = 0; i < 320; i++)
+		silencebuffer[i] = 128;
+
+	for (int j = 0; j < 50; j++)
+	{
+
+		channel1RTP->SendRTPPayloadData(silencebuffer, 320);
+		RTPTime::Wait(RTPTime(1, 20));
+		TRACE(_T(" Wait okay!\r\n"));
+
+	}
+	
+	channel1RTP->Set_Exit_Flag();
+	//channe21RTP->Rtp_Init(56500, 58400, 2012);
+
+	TRACE(_T(" channel1RTP->Rtp_Init okay!\r\n"));
 	
 	// TODO:  在此添加控件通知处理程序代码
 }

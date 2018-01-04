@@ -54,7 +54,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>C:\Program Files %28x86%29\jrtplib\include\jrtplib3;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>F:\VS2013\C++\RTP_MatserVoice\MFCApplication-RTP\MFCApplication-RTP;C:\Program Files %28x86%29\jrtplib\include\jrtplib3;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -105,8 +105,7 @@
   <ItemGroup>
     <ClInclude Include="MFCApplication-RTP.h" />
     <ClInclude Include="MFCApplication-RTPDlg.h" />
-    <ClInclude Include="myrtpreceiver.h" />
-    <ClInclude Include="myrtpsender.h" />
+    <ClInclude Include="myrtp.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
@@ -114,10 +113,7 @@
   <ItemGroup>
     <ClCompile Include="MFCApplication-RTP.cpp" />
     <ClCompile Include="MFCApplication-RTPDlg.cpp" />
-    <ClCompile Include="myrtpreceiver.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="myrtpsender.cpp">
+    <ClCompile Include="myrtp.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="stdafx.cpp">

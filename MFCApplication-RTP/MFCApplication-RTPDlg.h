@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "myrtpreceiver.h"
-#include "myrtpsender.h"
+#include "myrtp.h"
+
 
 // CMFCApplicationRTPDlg ¶Ô»°¿ò
 class CMFCApplicationRTPDlg : public CDialogEx
@@ -36,8 +36,7 @@ protected:
 
 public:
 	afx_msg void OnBnClickedButton1();
-	MyRTPSender *mysender;
-	MyRTPReceiver *myreceiver;
-
+	MyRTP *channel1RTP;
+	MyRTP *channel2RTP;
 
 };

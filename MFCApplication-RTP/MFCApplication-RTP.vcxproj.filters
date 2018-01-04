@@ -33,10 +33,7 @@
     <ClInclude Include="Resource.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="myrtpreceiver.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="myrtpsender.h">
+    <ClInclude Include="myrtp.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -50,10 +47,7 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="myrtpreceiver.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="myrtpsender.cpp">
+    <ClCompile Include="myrtp.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
