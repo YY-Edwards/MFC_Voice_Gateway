@@ -12,12 +12,12 @@
 
 MyRTP::MyRTP()
 {
-	Poll_Thread_IsActive =false;
-	Rx_RTP_Handle = NULL;
+	poll_thread_isactive =false;
+	rx_rtp_handle = NULL;
 	payloaddata =NULL;
 	payloaddatalength =0;
 	ssrc =0;
-	Thread_Exit_Flag = false;
+	thread_exit_flag = false;
 }
 
 MyRTP::~MyRTP()
@@ -64,12 +64,12 @@ void MyRTP::OnPollThreadFunc()
 			
 		EndDataAccess();
 		status = Poll();
-		checkerror(status);
+		CheckError(status);
 		
 		RTPTime::Wait(RTPTime(0,20));//20ms
 		//num++;
 		
-		if (Thread_Exit_Flag)break;
+		if (thread_exit_flag)break;
 		//if(num>230)break;
 		
 	}
@@ -118,16 +118,16 @@ void MyRTP::Rtp_Init(uint16_t portbase, uint16_t destport, uint32_t ssrc)
 	transparams.SetPortbase(portbase);
 	status = Create(sessparams, &transparams);
 	//fprintf(stderr,"status :%d\n", status);
-	checkerror(status);
+	CheckError(status);
 	
 	RTPIPv4Address addr(localip, destport);
 
 	status = AddDestination(addr);
-	checkerror(status);
+	CheckError(status);
 
-	//Poll_Thread_IsActive = true;
-	Rx_RTP_Handle = (HANDLE)_beginthreadex(NULL, 0, (unsigned int(__stdcall*)(void *))OnPollThread, this, 0, NULL);
-	if (Rx_RTP_Handle == NULL)
+	//poll_thread_isactive = true;
+	rx_rtp_handle = (HANDLE)_beginthreadex(NULL, 0, (unsigned int(__stdcall*)(void *))OnPollThread, this, 0, NULL);
+	if (rx_rtp_handle == NULL)
 	{
 		std::cout<<"create thread failed"<<std::endl;
 		system("pause");
@@ -140,10 +140,10 @@ void MyRTP::Rtp_Init(uint16_t portbase, uint16_t destport, uint32_t ssrc)
 void MyRTP::Set_ParamsForSender()
 {
 	
-	this->SetDefaultPayloadType(96);//设置传输类型  
-    this->SetDefaultMark(false);      //设置位  
-    this->SetTimestampUnit(1.0/8000.0); //设置采样间隔  
-    this->SetDefaultTimestampIncrement(160);//设置时间戳增加间隔  
+	SetDefaultPayloadType(96);//设置传输类型  
+    SetDefaultMark(false);      //设置位  
+    SetTimestampUnit(1.0/8000.0); //设置采样间隔  
+    SetDefaultTimestampIncrement(160);//设置时间戳增加间隔  
 	
 	
 }
@@ -151,7 +151,7 @@ void MyRTP::Set_ParamsForSender()
 void MyRTP::SendRTPPayloadData(uint8_t* buff, uint32_t buff_length)
 {
 	int status = this->SendPacket(buff, buff_length, 0, false, 160);
-	checkerror(status);
+	CheckError(status);
 	
 }
 
@@ -174,7 +174,7 @@ uint32_t  MyRTP::GetRTPSSRC()
 }
 
 
-void MyRTP::checkerror(int rtperr)
+void MyRTP::CheckError(int rtperr)
 {
 	if (rtperr < 0)
 	{

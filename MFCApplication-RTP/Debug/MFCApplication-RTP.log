@@ -1,11 +1,19 @@
-﻿生成启动时间为 2018/1/4 11:48:39。
-     1>项目“F:\VS2013\C++\RTP_MatserVoice\MFCApplication-RTP\MFCApplication-RTP\MFCApplication-RTP.vcxproj”在节点 2 上(Build 个目标)。
+﻿生成启动时间为 2018/1/4 13:59:09。
+     1>项目“F:\VS2013\C++\RTP_MatserVoice\MFCApplication-RTP\MFCApplication-RTP\MFCApplication-RTP.vcxproj”在节点 2 上(Rebuild 个目标)。
      1>ClCompile:
+         E:\Program x86C\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I"F:\VS2013\C++\RTP_MatserVoice\MFCApplication-RTP\MFCApplication-RTP" /I"C:\Program Files (x86)\jrtplib\include\jrtplib3" /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D WIN32 /D _WINDOWS /D _DEBUG /D _UNICODE /D UNICODE /D _AFXDLL /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Yc"stdafx.h" /Fp"Debug\MFCApplication-RTP.pch" /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt stdafx.cpp
+         stdafx.cpp
+         E:\Program x86C\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I"F:\VS2013\C++\RTP_MatserVoice\MFCApplication-RTP\MFCApplication-RTP" /I"C:\Program Files (x86)\jrtplib\include\jrtplib3" /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D WIN32 /D _WINDOWS /D _DEBUG /D _UNICODE /D UNICODE /D _AFXDLL /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Yu"stdafx.h" /Fp"Debug\MFCApplication-RTP.pch" /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt "MFCApplication-RTP.cpp" "MFCApplication-RTPDlg.cpp"
+         MFCApplication-RTPDlg.cpp
+         MFCApplication-RTP.cpp
+         正在生成代码...
          E:\Program x86C\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I"F:\VS2013\C++\RTP_MatserVoice\MFCApplication-RTP\MFCApplication-RTP" /I"C:\Program Files (x86)\jrtplib\include\jrtplib3" /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D WIN32 /D _WINDOWS /D _DEBUG /D _UNICODE /D UNICODE /D _AFXDLL /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt myrtp.cpp
          myrtp.cpp
      1>f:\vs2013\c++\rtp_matservoice\mfcapplication-rtp\mfcapplication-rtp\myrtp.cpp : warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
      1>f:\vs2013\c++\rtp_matservoice\mfcapplication-rtp\mfcapplication-rtp\myrtp.cpp(89): warning C4002: “_T”宏的实参太多
      1>f:\vs2013\c++\rtp_matservoice\mfcapplication-rtp\mfcapplication-rtp\myrtp.cpp(90): warning C4002: “_T”宏的实参太多
+       ResourceCompile:
+         C:\Program Files (x86)\Windows Kits\8.1\bin\x86\rc.exe /D _DEBUG /D _UNICODE /D UNICODE /D _AFXDLL /l"0x0804" /IDebug\ /nologo /fo"Debug\MFCApplication-RTP.res" MFCApplication-RTP.rc 
        Link:
          E:\Program x86C\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"F:\VS2013\C++\RTP_MatserVoice\MFCApplication-RTP\Debug\MFCApplication-RTP.exe" /INCREMENTAL /NOLOGO jrtplib_d.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /manifestinput:"E:\Program x86C\Microsoft Visual Studio 12.0\VC\Include\Manifest\dpiaware.manifest" /DEBUG /PDB:"F:\VS2013\C++\RTP_MatserVoice\MFCApplication-RTP\Debug\MFCApplication-RTP.pdb" /SUBSYSTEM:WINDOWS /TLBID:1 /ENTRY:"wWinMainCRTStartup" /DYNAMICBASE /NXCOMPAT /IMPLIB:"F:\VS2013\C++\RTP_MatserVoice\MFCApplication-RTP\Debug\MFCApplication-RTP.lib" /MACHINE:X86 "Debug\MFCApplication-RTP.res"
          "Debug\MFCApplication-RTP.obj"
@@ -13,8 +21,8 @@
          Debug\myrtp.obj
          Debug\stdafx.obj
          MFCApplication-RTP.vcxproj -> F:\VS2013\C++\RTP_MatserVoice\MFCApplication-RTP\Debug\MFCApplication-RTP.exe
-     1>已完成生成项目“F:\VS2013\C++\RTP_MatserVoice\MFCApplication-RTP\MFCApplication-RTP\MFCApplication-RTP.vcxproj”(Build 个目标)的操作。
+     1>已完成生成项目“F:\VS2013\C++\RTP_MatserVoice\MFCApplication-RTP\MFCApplication-RTP\MFCApplication-RTP.vcxproj”(Rebuild 个目标)的操作。
 
 生成成功。
 
-已用时间 00:00:06.36
+已用时间 00:00:12.21

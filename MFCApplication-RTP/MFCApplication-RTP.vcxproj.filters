@@ -36,6 +36,9 @@
     <ClInclude Include="myrtp.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="myprotocol.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MFCApplication-RTP.cpp">
@@ -48,6 +51,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="myrtp.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="myprotocol.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
