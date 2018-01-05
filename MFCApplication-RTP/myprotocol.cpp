@@ -138,6 +138,12 @@ int JProtocol::ListenThread(void* p)
 void JProtocol::ListenThreadFunc()
 {
 	int sin_size = 0;
+	std::string str_identifier;
+	std::string str_type;
+	std::string str_name;
+
+	Json::Value val;
+	Json::Reader reader;
 	sin_size = sizeof(struct sockaddr_in);
 	SOCKET currentclientsoc;
 	int recv_length = 0;
@@ -167,13 +173,27 @@ void JProtocol::ListenThreadFunc()
 			}
 			else
 			{
-				std::string strName;
-				Json::Value val;
-				Json::Reader reader;
+				if (reader.parse(recvbuf, val))
+				{
 
-				TRACE(_T("recv_length : %d\n"), recv_length);
+					str_type = val["type"].asString();
+					TRACE(("type : %s\n"), str_type.c_str());
 
-				TRACE(_T("recv[0] : %c\n"), recvbuf[0]);
+					str_name = val["name"].asString();
+					TRACE(("name : %s\n"), str_name.c_str());
+
+					str_identifier = val["identifier"].asString();
+					TRACE(("identifier : %s\n"), str_identifier.c_str());
+
+				}
+				else
+				{
+					TRACE(_T("reader.parse err!!!\n"));
+				}
+
+			/*	TRACE(_T("recv_length : %d\n"), recv_length);
+
+				TRACE(_T("recv[0] : %c\n"), recvbuf[0]);*/
 
 				if (recvbuf[0] == 'Q')break;
 			}
