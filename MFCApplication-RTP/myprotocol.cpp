@@ -1,6 +1,13 @@
+/*
+* myprotocol.cpp
+*
+* Created: 2018/01/03
+* Author: EDWARDS
+*/
+
+
 #include "stdafx.h"
 #include "myprotocol.h"
-
 
 JProtocol::JProtocol()
 {
@@ -10,12 +17,14 @@ JProtocol::JProtocol()
 	 islistenstatus = true;
 	 listen_thread_handle = NULL;
 
+	 ondata_locker = CreateMutex(nullptr, FALSE, (LPCWSTR)"ondata");
 
 }
 
 JProtocol::~JProtocol()
 {
-
+	CloseHandle(ondata_locker);
+	CloseHandle(listen_thread_handle);
 }
 void JProtocol::CloseMater()
 {
@@ -25,6 +34,27 @@ void JProtocol::CloseMater()
 
 }
 
+
+void JProtocol::SetCallBackFunc(void(*callBackFunc)(int, ResponeData))
+{
+	RequestCallBackFunc = callBackFunc;
+}
+
+void JProtocol::onData(void(*func)(int, ResponeData), int command, ResponeData data)
+{
+	WaitForSingleObject(ondata_locker, INFINITE);
+	try
+	{
+		func(command, data);
+	}
+	catch (double)
+	{
+		TRACE(_T("func error...\n"));
+
+	}
+	ReleaseMutex(ondata_locker);
+
+}
 
 void JProtocol::Start()
 {
@@ -137,6 +167,9 @@ void JProtocol::ListenThreadFunc()
 			}
 			else
 			{
+				std::string strName;
+				Json::Value val;
+				Json::Reader reader;
 
 				TRACE(_T("recv_length : %d\n"), recv_length);
 

@@ -1,6 +1,16 @@
+
+/*
+* myprotocol.h
+*
+* Created: 2018/01/03
+* Author: EDWARDS
+*/
+
+
 #ifndef MYPROTOCOL_H
 #include "Common.h"
 #include "myrtp.h"
+#include "json.h"
 
 class JProtocol
 {
@@ -18,7 +28,7 @@ public:
 	回调接口
 	设置回调函数
 	*/
-	//void SetCallBackFunc(void(*callBackFunc)(int, ResponeData));
+	void SetCallBackFunc(void(*callBackFunc)(int, ResponeData));
 
 	/*
 	连接回复
@@ -65,6 +75,12 @@ public:
 
 
 private:
+
+	HANDLE ondata_locker;
+	//回调接口
+	void(*RequestCallBackFunc)(int, ResponeData);//请求类回调
+	//void(*NotifyCallBackFunc)(int, ResponeData);//通知类回调
+	void onData(void(*func)(int, ResponeData), int command, ResponeData data);
 
 	static int ListenThread(void* p);
 	//static UINT OnPollThread(LPVOID p);
