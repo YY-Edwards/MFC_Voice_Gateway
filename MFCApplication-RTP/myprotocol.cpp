@@ -139,6 +139,7 @@ void JProtocol::ListenThreadFunc()
 {
 	int sin_size = 0;
 	std::string str_identifier;
+	int recvTimeout = 10 * 1000;   //10s
 	std::string str_type;
 	std::string str_name;
 
@@ -161,17 +162,13 @@ void JProtocol::ListenThreadFunc()
 	else
 	{
 		//currentclientsoc = clientsoc;
+		//…Ë÷√RECV≥¨ ±
+		setsockopt(currentclientsoc, SOL_SOCKET, SO_RCVTIMEO, (char *)&recvTimeout, sizeof(int));
 		TRACE(_T("Connected\n"));
 		while (islistenstatus)
 		{
 			memset(recvbuf, 0, BUFLENGTH);
-			if ((recv_length = recv(currentclientsoc, recvbuf, BUFLENGTH, 0)) < 0)
-			{
-				
-				TRACE(_T("Close client\n"));
-				break;			
-			}
-			else
+			if ((recv_length = recv(currentclientsoc, recvbuf, BUFLENGTH, 0)) > 0)
 			{
 				if (reader.parse(recvbuf, val))
 				{
@@ -191,11 +188,30 @@ void JProtocol::ListenThreadFunc()
 					TRACE(_T("reader.parse err!!!\n"));
 				}
 
-			/*	TRACE(_T("recv_length : %d\n"), recv_length);
+				/*	TRACE(_T("recv_length : %d\n"), recv_length);
 
 				TRACE(_T("recv[0] : %c\n"), recvbuf[0]);*/
 
 				if (recvbuf[0] == 'Q')break;
+				
+			}
+			else
+			{
+				if ((recv_length < 0) && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR || errno == 0))
+				{
+					if (errno == 0)
+					{
+						TRACE(_T("Timeout\n"));
+					}
+					continue;
+				}
+				else
+				{
+
+					TRACE(_T("Close client\n"));
+					break;
+				}
+				
 			}
 			
 		}
