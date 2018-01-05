@@ -11,6 +11,7 @@
 #include "Common.h"
 #include "myrtp.h"
 #include "json.h"
+#include "JsonQueue.h"
 
 class JProtocol
 {
@@ -83,9 +84,13 @@ private:
 	void onData(void(*func)(int, ResponeData), int command, ResponeData data);
 
 	static int ListenThread(void* p);
-	//static UINT OnPollThread(LPVOID p);
 	void ListenThreadFunc();
+	static int ProtocolParseThread(void *p);
+	void ProtocolParseThreadFunc();
+
+	void ProcessClient(SOCKET clientfd);
 	void CreateListenThread();
+	void CreatProtocolParseThread();
 	/*
 	socket≥ı ºªØ
 	*/
@@ -98,7 +103,9 @@ private:
 	struct sockaddr_in my_addr; /* loacl */
 	struct sockaddr_in remote_addr; //client_address
 	HANDLE listen_thread_handle;
+	HANDLE parse_thread_handle;
 	char recvbuf[BUFLENGTH];
+	JsonQueue *jqueue;
 
 };
 

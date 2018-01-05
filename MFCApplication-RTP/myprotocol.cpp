@@ -17,6 +17,8 @@ JProtocol::JProtocol()
 	 islistenstatus = true;
 	 listen_thread_handle = NULL;
 
+	 jqueue = new JsonQueue;
+
 	 ondata_locker = CreateMutex(nullptr, FALSE, (LPCWSTR)"ondata");
 
 }
@@ -25,6 +27,8 @@ JProtocol::~JProtocol()
 {
 	CloseHandle(ondata_locker);
 	CloseHandle(listen_thread_handle);
+	CloseHandle(parse_thread_handle);
+	if (jqueue != NULL)delete jqueue;
 }
 void JProtocol::CloseMater()
 {
@@ -98,6 +102,7 @@ bool JProtocol::InitSocket()
 		return false;
 	}
 
+	CreatProtocolParseThread();
 	CreateListenThread();
 
 	socketopen = true;
@@ -125,6 +130,74 @@ void JProtocol::CreateListenThread()
 
 }
 
+void JProtocol::CreatProtocolParseThread()
+{
+	parse_thread_handle = (HANDLE)_beginthreadex(NULL, 0, (unsigned int(__stdcall*)(void *))ProtocolParseThread, this, 0, NULL);
+	if (parse_thread_handle == NULL)
+	{
+		std::cout << "create thread failed" << std::endl;
+		system("pause");
+	}
+
+}
+
+int JProtocol::ProtocolParseThread(void *p)
+{
+	JProtocol *arg = (JProtocol*)p;
+	if (arg != NULL)
+	{
+		arg->ProtocolParseThreadFunc();
+	}
+	return 0;
+}
+void JProtocol::ProtocolParseThreadFunc()
+{
+	std::string str_identifier;
+	std::string str_type;
+	std::string str_name;
+
+	Json::Value val;
+	Json::Reader reader;
+
+	char queue_data[512];
+	int len=0;
+	uint32_t return_value = 0;
+	memset(queue_data, 0x00, 512);
+
+	while (jqueue != NULL)
+	{
+		return_value = jqueue->TakeFromQueue(queue_data, (int&)len);
+		if (0 == return_value)
+		{
+			if (reader.parse(queue_data, val))
+			{
+
+				str_type = val["type"].asString();
+				TRACE(("type : %s\n"), str_type.c_str());
+
+				str_name = val["name"].asString();
+				TRACE(("name : %s\n"), str_name.c_str());
+
+				str_identifier = val["identifier"].asString();
+				TRACE(("identifier : %s\n"), str_identifier.c_str());
+
+			}
+			else
+			{
+				TRACE(_T("reader.parse err!!!\n"));
+			}
+			memset(queue_data, 0x00, 512);
+			
+		}
+		else
+		{
+			Sleep(200);//200ms
+		}
+
+	}
+	jqueue->ClearQueue();
+	TRACE(_T(" exit ProtocolParseThreadFunc\n"));
+}
 int JProtocol::ListenThread(void* p)
 {
 	JProtocol *arg = (JProtocol*)p;
@@ -138,16 +211,16 @@ int JProtocol::ListenThread(void* p)
 void JProtocol::ListenThreadFunc()
 {
 	int sin_size = 0;
-	std::string str_identifier;
-	int recvTimeout = 10 * 1000;   //10s
-	std::string str_type;
-	std::string str_name;
+	//std::string str_identifier;
+	//int recvTimeout = 30 * 1000;   //30s
+	//std::string str_type;
+	//std::string str_name;
 
-	Json::Value val;
-	Json::Reader reader;
+	//Json::Value val;
+	//Json::Reader reader;
 	sin_size = sizeof(struct sockaddr_in);
 	SOCKET currentclientsoc;
-	int recv_length = 0;
+	/*int recv_length = 0;*/
 
 	if ((currentclientsoc = accept(serversoc, (sockaddr*)&remote_addr, &sin_size)) < 0)
 	{
@@ -161,66 +234,83 @@ void JProtocol::ListenThreadFunc()
 	}
 	else
 	{
-		//currentclientsoc = clientsoc;
-		//设置RECV超时
-		setsockopt(currentclientsoc, SOL_SOCKET, SO_RCVTIMEO, (char *)&recvTimeout, sizeof(int));
-		TRACE(_T("Connected\n"));
-		while (islistenstatus)
-		{
-			memset(recvbuf, 0, BUFLENGTH);
-			if ((recv_length = recv(currentclientsoc, recvbuf, BUFLENGTH, 0)) > 0)
-			{
-				if (reader.parse(recvbuf, val))
-				{
-
-					str_type = val["type"].asString();
-					TRACE(("type : %s\n"), str_type.c_str());
-
-					str_name = val["name"].asString();
-					TRACE(("name : %s\n"), str_name.c_str());
-
-					str_identifier = val["identifier"].asString();
-					TRACE(("identifier : %s\n"), str_identifier.c_str());
-
-				}
-				else
-				{
-					TRACE(_T("reader.parse err!!!\n"));
-				}
-
-				/*	TRACE(_T("recv_length : %d\n"), recv_length);
-
-				TRACE(_T("recv[0] : %c\n"), recvbuf[0]);*/
-
-				if (recvbuf[0] == 'Q')break;
-				
-			}
-			else
-			{
-				if ((recv_length < 0) && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR || errno == 0))
-				{
-					if (errno == 0)
-					{
-						TRACE(_T("Timeout\n"));
-					}
-					continue;
-				}
-				else
-				{
-
-					TRACE(_T("Close client\n"));
-					break;
-				}
-				
-			}
-			
-		}
+		ProcessClient(currentclientsoc);//while()
 	}
 	
 	CloseSocket(currentclientsoc);
 	TRACE(_T("Close socket and exit listenthread\n"));
 
 
+
+}
+
+void JProtocol::ProcessClient(SOCKET clientfd)
+{
+	//std::string str_identifier;
+	int recvTimeout = 30 * 1000;   //30s
+	//std::string str_type;
+	//std::string str_name;
+
+	//Json::Value val;
+	//Json::Reader reader;
+	int recv_length = 0;
+
+	//currentclientsoc = clientsoc;
+	//设置RECV超时
+	setsockopt(clientfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&recvTimeout, sizeof(int));
+	TRACE(_T("Connected\n"));
+	while (islistenstatus)
+	{
+		memset(recvbuf, 0, BUFLENGTH);
+		if ((recv_length = recv(clientfd, recvbuf, BUFLENGTH, 0)) > 0)
+		{
+
+		/*	if (reader.parse(recvbuf, val))
+			{
+
+				str_type = val["type"].asString();
+				TRACE(("type : %s\n"), str_type.c_str());
+
+				str_name = val["name"].asString();
+				TRACE(("name : %s\n"), str_name.c_str());
+
+				str_identifier = val["identifier"].asString();
+				TRACE(("identifier : %s\n"), str_identifier.c_str());
+
+			}
+			else
+			{
+				TRACE(_T("reader.parse err!!!\n"));
+			}
+*/
+			/*	TRACE(_T("recv_length : %d\n"), recv_length);
+
+			TRACE(_T("recv[0] : %c\n"), recvbuf[0]);*/
+
+			if (recvbuf[0] == 'Q')break;
+			jqueue->PushToQueue(recvbuf, recv_length);
+			
+		}
+		else
+		{
+			if ((recv_length < 0) && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR || errno == 0))
+			{
+				if (errno == 0)
+				{
+					TRACE(_T("Timeout\n"));
+				}
+				continue;
+			}
+			else
+			{
+
+				TRACE(_T("Close client\n"));
+				break;
+			}
+			
+		}
+
+	}
 
 }
 
