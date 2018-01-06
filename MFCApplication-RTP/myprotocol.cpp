@@ -16,6 +16,7 @@ JProtocol::JProtocol()
 	 serversoc = 0;;
 	 islistenstatus = true;
 	 listen_thread_handle = NULL;
+	 parse_thread_handle = NULL;
 
 	 jqueue = new JsonQueue;
 
@@ -161,13 +162,14 @@ void JProtocol::ProtocolParseThreadFunc()
 
 	char queue_data[512];
 	int len=0;
-	uint32_t return_value = 0;
+	int32_t return_value = -1;
 	memset(queue_data, 0x00, 512);
 
-	while (jqueue != NULL)
+	while (islistenstatus)
 	{
 		return_value = jqueue->TakeFromQueue(queue_data, (int&)len);
-		if (0 == return_value)
+		//if (0 == return_value)
+		if (WAIT_OBJECT_0 == return_value)
 		{
 			if (reader.parse(queue_data, val))
 			{
@@ -186,6 +188,7 @@ void JProtocol::ProtocolParseThreadFunc()
 			{
 				TRACE(_T("reader.parse err!!!\n"));
 			}
+			
 			memset(queue_data, 0x00, 512);
 			
 		}
@@ -238,6 +241,7 @@ void JProtocol::ListenThreadFunc()
 	}
 	
 	CloseSocket(currentclientsoc);
+	islistenstatus = false;
 	TRACE(_T("Close socket and exit listenthread\n"));
 
 

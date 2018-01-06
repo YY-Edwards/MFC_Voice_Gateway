@@ -24,16 +24,18 @@ class JsonQueue
 
 	public:
 		bool  			PushToQueue(void *packet, int len);
-		uint32_t 		TakeFromQueue(void *packet, int& len);
+		int32_t 		TakeFromQueue(void *packet, int& len);
 		void			ClearQueue();
 		bool 			QueueIsEmpty();
 
 	private:
 		//init mutex
 		HANDLE m_hLocker;
+		HANDLE m_hSemaphore;
 		std::list<char *>  	m_list;
-		char fifobuff[40][512];
+		char fifobuff[20][512];
 		uint32_t fifo_counter;
+		//char* sBuffer;
 
 	
 };
