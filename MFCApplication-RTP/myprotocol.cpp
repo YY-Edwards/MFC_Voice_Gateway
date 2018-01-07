@@ -14,7 +14,7 @@ JProtocol::JProtocol()
 
 	 socketopen =false;
 	 serversoc = 0;;
-	 islistenstatus = true;
+	 islistenstatus = false;
 	 listen_thread_handle = NULL;
 	 parse_thread_handle = NULL;
 
@@ -29,12 +29,18 @@ JProtocol::~JProtocol()
 	CloseHandle(ondata_locker);
 	CloseHandle(listen_thread_handle);
 	CloseHandle(parse_thread_handle);
-	if (jqueue != NULL)delete jqueue;
+	if (jqueue != NULL)
+	{
+		delete jqueue;
+		jqueue = NULL;
+	}
 }
 void JProtocol::CloseMater()
 {
 	if (socketopen)CloseSocket(serversoc);
 	socketopen = false;
+	delete jqueue;
+	jqueue = NULL;
 	TRACE(_T("Close Server\n"));
 
 }
@@ -108,14 +114,6 @@ bool JProtocol::InitSocket()
 
 	socketopen = true;
 
-	//listen_thread_handle = (HANDLE)_beginthreadex(NULL, 0, (unsigned int(__stdcall*)(void *))ListenThread, this, 0, NULL);
-	//if (listen_thread_handle == NULL)
-	//{
-	//	std::cout << "create thread failed" << std::endl;
-	//	system("pause");
-	//}
-
-
 	return true;
 
 }
@@ -165,7 +163,7 @@ void JProtocol::ProtocolParseThreadFunc()
 	int32_t return_value = -1;
 	memset(queue_data, 0x00, 512);
 
-	while (islistenstatus)
+	while (jqueue!=NULL)
 	{
 		return_value = jqueue->TakeFromQueue(queue_data, (int&)len);
 		//if (0 == return_value)
@@ -192,13 +190,17 @@ void JProtocol::ProtocolParseThreadFunc()
 			memset(queue_data, 0x00, 512);
 			
 		}
+		else if (WAIT_FAILED == return_value)
+		{
+			break;
+		}
 		else
 		{
-			Sleep(200);//200ms
+			//Sleep(200);//200ms
 		}
 
 	}
-	jqueue->ClearQueue();
+	//jqueue->ClearQueue();
 	TRACE(_T(" exit ProtocolParseThreadFunc\n"));
 }
 int JProtocol::ListenThread(void* p)
@@ -214,16 +216,8 @@ int JProtocol::ListenThread(void* p)
 void JProtocol::ListenThreadFunc()
 {
 	int sin_size = 0;
-	//std::string str_identifier;
-	//int recvTimeout = 30 * 1000;   //30s
-	//std::string str_type;
-	//std::string str_name;
-
-	//Json::Value val;
-	//Json::Reader reader;
 	sin_size = sizeof(struct sockaddr_in);
 	SOCKET currentclientsoc;
-	/*int recv_length = 0;*/
 
 	if ((currentclientsoc = accept(serversoc, (sockaddr*)&remote_addr, &sin_size)) < 0)
 	{
@@ -237,6 +231,7 @@ void JProtocol::ListenThreadFunc()
 	}
 	else
 	{
+		islistenstatus = true;
 		ProcessClient(currentclientsoc);//while()
 	}
 	
@@ -250,13 +245,8 @@ void JProtocol::ListenThreadFunc()
 
 void JProtocol::ProcessClient(SOCKET clientfd)
 {
-	//std::string str_identifier;
-	int recvTimeout = 30 * 1000;   //30s
-	//std::string str_type;
-	//std::string str_name;
 
-	//Json::Value val;
-	//Json::Reader reader;
+	int recvTimeout = 30 * 1000;   //30s
 	int recv_length = 0;
 
 	//currentclientsoc = clientsoc;

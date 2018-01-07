@@ -12,6 +12,7 @@
 #include <errno.h>
 #include <string.h>
 #include <list>
+#include <queue>
 #include <stdint.h>
 #include <process.h>
 
@@ -33,10 +34,11 @@ class JsonQueue
 		HANDLE m_hLocker;
 		HANDLE m_hSemaphore;
 		std::list<char *>  	m_list;
+		std::queue<char *>  m_queue;
 		char fifobuff[20][512];
-		uint32_t fifo_counter;
+		volatile  uint32_t fifo_counter;
 		//char* sBuffer;
-
+		CRITICAL_SECTION cs;
 	
 };
 
