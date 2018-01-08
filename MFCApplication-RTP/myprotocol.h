@@ -120,6 +120,7 @@ private:
 	FifoQueue jqueue;//JSON data queue
 	//FifoQueue dqueue;//PROTOCOL_Ctrlr data queue
 	PROTOCOL_Ctrlr thePROTOCOL_Ctrlr;
+	std::map <std::string, int>  statemap;
 
 };
 

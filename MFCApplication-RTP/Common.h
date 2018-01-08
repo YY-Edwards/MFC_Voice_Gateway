@@ -21,6 +21,8 @@ using namespace std;
 #define						TCPPORT									57000
 #define						BUFLENGTH								1024
 
+#define						PROTOCOL_HEAD							0x01
+#define						PROTOCOL_LENGTH							4
 
 #pragma pack(1)
 struct ResponeData
@@ -112,7 +114,8 @@ typedef struct{
 #pragma pack(1)
 typedef struct{
 
-	MASTER_States MASTER_State;
+	PROTOCOL_Names MASTER_State;
+	//MASTER_States MASTER_State;
 	std::string identifier;
 	std::string type;
 	std::string name;

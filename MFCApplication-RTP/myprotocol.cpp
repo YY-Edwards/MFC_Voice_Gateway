@@ -40,9 +40,18 @@ void JProtocol::InitProtocolData()
 	//jqueue = new FifoQueue;
 	ondata_locker = CreateMutex(nullptr, FALSE, (LPCWSTR)"ondata");
 
+	//inset states
+	statemap.insert(std::pair<string, int>("Connect", CONNECT));
+	statemap.insert(std::pair<string, int>("Listening", LISTENING));
+	statemap.insert(std::pair<string, int>("Query", QUERY));
+	statemap.insert(std::pair<string, int>("CallRequest", CALLREQUEST));
+	statemap.insert(std::pair<string, int>("CallRelease", CALLRELEASE));
+	statemap.insert(std::pair<string, int>("CallStart", CALLSTART));
+	statemap.insert(std::pair<string, int>("CallEND", CALLEND));
+
 	//init default protocol data
 	thePROTOCOL_Ctrlr.identifier = "";
-	thePROTOCOL_Ctrlr.MASTER_State = PROTOCOL_UNCONNECTEDWAITINGSTATUS;
+	thePROTOCOL_Ctrlr.MASTER_State = CONNECT;
 	thePROTOCOL_Ctrlr.type = "Request";
 	thePROTOCOL_Ctrlr.name = "Connect";
 	thePROTOCOL_Ctrlr.PROTOCOL_params.key = "";
@@ -163,34 +172,41 @@ void JProtocol::CreatProtocolParseThread()
 
 void JProtocol::DataProcessFunc()
 {
-	switch (thePROTOCOL_Ctrlr.MASTER_State)
+
+	switch (statemap.find(thePROTOCOL_Ctrlr.name)->second)
 	{
-	case PROTOCOL_UNCONNECTEDWAITINGSTATUS:
-			if ((thePROTOCOL_Ctrlr.name == "Connect") && (thePROTOCOL_Ctrlr.type == "Request"))
-			{
-				TRACE(_T("the ThirdParty Request Connect\n"));
-				if (RequestCallBackFunc != NULL)
-				{
-					ResponeData r = { thePROTOCOL_Ctrlr.identifier, thePROTOCOL_Ctrlr.PROTOCOL_params.key, 
-						"", -1, -1, -1, -1, "", "" };
-
-					onData(RequestCallBackFunc, CONNECT, r);//callback (*func)
-
-					thePROTOCOL_Ctrlr.MASTER_State = PROTOCOL_UNCONNECTEDWAITINGSETLISTENING;
-				}
-
-			}
-
-
-			break;
-
-	case PROTOCOL_UNCONNECTEDWAITINGSETLISTENING:
+	case CONNECT:
+			TRACE(_T("the ThirdParty Request Connect\n"));
 		break;
 
-	case PROTOCOL_CONNECTED:
+	case LISTENING:
+			TRACE(_T("the ThirdParty Request Listening\n"));
+		break;
+
+	case QUERY:
+			TRACE(_T("the ThirdParty Request Query\n"));
+		break;
+
+	case CALLREQUEST:
+			TRACE(_T("the ThirdParty Request Call Start\n"));
+		break;
+	case CALLRELEASE:
+			TRACE(_T("the ThirdParty Request Call Release\n"));
+		break;
+	case CALLSTART:
+	case CALLEND:
+			TRACE(_T("no support cmd\n"));
 		break;
 	default:
 		break;
+	}
+
+	if (RequestCallBackFunc != NULL)
+	{
+		ResponeData r = { thePROTOCOL_Ctrlr.identifier, thePROTOCOL_Ctrlr.PROTOCOL_params.key,
+			"", -1, -1, -1, -1, "", "" };
+
+		onData(RequestCallBackFunc, statemap.find(thePROTOCOL_Ctrlr.name)->second, r);//callback (*func)
 	}
 
 
@@ -252,7 +268,9 @@ void JProtocol::ProtocolParseThreadFunc()
 					//other data
 
 				}
-				DataProcessFunc();//process thePROTOCOL_Ctrlr data
+
+				if (thePROTOCOL_Ctrlr.type == "Request")
+					DataProcessFunc();//process thePROTOCOL_Ctrlr data
 			}
 			else
 			{
@@ -313,6 +331,9 @@ void JProtocol::ProcessClient(SOCKET clientfd)
 
 	int recvTimeout = 30 * 1000;   //30s
 	int recv_length = 0;
+	static int32_t bytes_remained = 0;
+	static uint32_t count = 0;
+	static uint32_t pro_length = 0;
 
 	//currentclientsoc = clientsoc;
 	//ÉèÖÃRECV³¬Ê±
@@ -320,10 +341,80 @@ void JProtocol::ProcessClient(SOCKET clientfd)
 	TRACE(_T("Connected\n"));
 	while (islistenstatus)
 	{
-		if ((recv_length = recv(clientfd, recvbuf, BUFLENGTH, 0)) > 0)
+		if ((recv_length = recv(clientfd, &recvbuf[count], BUFLENGTH, 0)) > 0)
 		{
-			if (recvbuf[0] == 'Q')break;
-			jqueue.PushToQueue(recvbuf, recv_length);//push to fifo-buff	
+			if ((recvbuf[0] == 'Q') && recv_length == 1)break;
+
+			if ((recvbuf[0] == 0x31) && (recv_length >= 5) && (bytes_remained == 0))
+			//if ((recvbuf[0] == 0x01) && (recv_length >= 5) && (bytes_remained ==0))//protocol start
+			{
+				pro_length = (recvbuf[1] - 0x30) * 1000 + (recvbuf[2] - 0x30) * 100
+					+ (recvbuf[3] - 0x30) * 10 + (recvbuf[4] - 0x30);
+
+				bytes_remained = pro_length -(recv_length-5);
+				if (bytes_remained == 0)
+				{
+					jqueue.PushToQueue(&recvbuf[5], pro_length);//push to fifo-buff
+					//clear temp
+					pro_length = 0;
+					count = 0;
+					memset(recvbuf, 0, BUFLENGTH);//clear recvbuf[BUFLENGTH];
+				}
+				else if (bytes_remained > 0)
+				{
+					count += recv_length;
+					continue;//wait the 
+					 
+				}
+				else//recv_length >(pro_length+5) (bytes_remained < 0)
+				{
+					jqueue.PushToQueue(&recvbuf[5], pro_length);//push to fifo-buff
+
+					memcpy_s(&recvbuf[0], BUFLENGTH, &recvbuf[pro_length+5], recv_length - 5 - pro_length);
+					if (recvbuf[0] != 0x01)
+					{
+						memset(recvbuf, 0, BUFLENGTH);//clear recvbuf[BUFLENGTH];
+						continue;//throw the buff
+					}
+					count += (recv_length - 5 - pro_length);
+					if (count >= 5)
+					{
+						pro_length = (recvbuf[1] - 0x30) * 1000 + (recvbuf[2] - 0x30) * 100
+							+ (recvbuf[3] - 0x30) * 10 + (recvbuf[4] - 0x30);
+
+						bytes_remained = pro_length - (recv_length - 5);
+					}
+					else
+					{
+						TRACE(_T("bytes_remained err !!!\n"));
+					}
+				}
+
+			}
+			else if (bytes_remained >0)
+			{
+				bytes_remained = pro_length - recv_length;
+				if (bytes_remained == 0)
+				{
+					jqueue.PushToQueue(&recvbuf[5], pro_length);//push to fifo-buff
+					//clear temp
+					pro_length = 0;
+					count = 0;
+					memset(recvbuf, 0, BUFLENGTH);//clear recvbuf[BUFLENGTH];
+				}
+				else//bytes_remained > 0
+				{
+					count += recv_length;
+					continue;//wait the 
+				}
+
+			}
+			else//bytes_remained < 0
+			{
+				TRACE(_T("no happen!!!\n"));
+			}
+
+
 		}
 		else
 		{
@@ -343,7 +434,7 @@ void JProtocol::ProcessClient(SOCKET clientfd)
 			}
 			
 		}
-		memset(recvbuf, 0, BUFLENGTH);//clear recvbuf[BUFLENGTH];
+		//memset(recvbuf, 0, BUFLENGTH);//clear recvbuf[BUFLENGTH];
 
 	}
 
