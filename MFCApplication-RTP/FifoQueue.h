@@ -1,12 +1,12 @@
 /*
- * JsonQueue.h
+ * FifoQueue.h
  *
  * Created: 2018/01/03
  * Author: EDWARDS
  */ 
 
-#ifndef JsonQueue_h_
-#define JsonQueue_h_
+#ifndef FifoQueue_h_
+#define FifoQueue_h_
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -16,16 +16,16 @@
 #include <stdint.h>
 #include <process.h>
 
-class JsonQueue 
+class FifoQueue 
 {
 	
 	public:
-		JsonQueue();
-		~JsonQueue();
+		FifoQueue();
+		~FifoQueue();
 
 	public:
 		bool  			PushToQueue(void *packet, int len);
-		int32_t 		TakeFromQueue(void *packet, int& len);
+		int32_t 		TakeFromQueue(void *packet, int& len, int waittime =200);
 		void			ClearQueue();
 		bool 			QueueIsEmpty();
 

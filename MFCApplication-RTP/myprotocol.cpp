@@ -11,17 +11,7 @@
 
 JProtocol::JProtocol()
 {
-
-	 socketopen =false;
-	 serversoc = 0;;
-	 islistenstatus = false;
-	 listen_thread_handle = NULL;
-	 parse_thread_handle = NULL;
-
-	 jqueue = new JsonQueue;
-
-	 ondata_locker = CreateMutex(nullptr, FALSE, (LPCWSTR)"ondata");
-
+	 InitProtocolData();
 }
 
 JProtocol::~JProtocol()
@@ -29,28 +19,61 @@ JProtocol::~JProtocol()
 	CloseHandle(ondata_locker);
 	CloseHandle(listen_thread_handle);
 	CloseHandle(parse_thread_handle);
-	if (jqueue != NULL)
+	CloseHandle(data_thread_handle);
+	/*if (jqueue != NULL)
 	{
 		delete jqueue;
 		jqueue = NULL;
-	}
+	}*/
+}
+
+void JProtocol::InitProtocolData()
+{
+	socketopen = false;
+	serversoc = 0;;
+	islistenstatus = false;
+	listen_thread_handle = NULL;
+	parse_thread_handle = NULL;
+	data_thread_handle = NULL;
+	memset(recvbuf, 0x00, BUFLENGTH);
+
+	//jqueue = new FifoQueue;
+	ondata_locker = CreateMutex(nullptr, FALSE, (LPCWSTR)"ondata");
+
+	//init default protocol data
+	thePROTOCOL_Ctrlr.identifier = "";
+	thePROTOCOL_Ctrlr.MASTER_State = PROTOCOL_UNCONNECTEDWAITINGSTATUS;
+	thePROTOCOL_Ctrlr.type = "Request";
+	thePROTOCOL_Ctrlr.name = "Connect";
+	thePROTOCOL_Ctrlr.PROTOCOL_params.key = "";
+	thePROTOCOL_Ctrlr.PROTOCOL_params.status = "fail";
+	thePROTOCOL_Ctrlr.PROTOCOL_params.reason = "";
+	thePROTOCOL_Ctrlr.PROTOCOL_params.Listening_channles.channel1_value = 55;
+	thePROTOCOL_Ctrlr.PROTOCOL_params.Listening_channles.channel2_value = 77;
+	thePROTOCOL_Ctrlr.PROTOCOL_params.Channel1_Param.reason = "";
+	thePROTOCOL_Ctrlr.PROTOCOL_params.Channel1_Param.status = "fail";
+	thePROTOCOL_Ctrlr.PROTOCOL_params.Channel1_Param.channel_value = 55;
+	thePROTOCOL_Ctrlr.PROTOCOL_params.Channel2_Param.reason = "";
+	thePROTOCOL_Ctrlr.PROTOCOL_params.Channel2_Param.status = "fail";
+	thePROTOCOL_Ctrlr.PROTOCOL_params.Channel2_Param.channel_value = 77;
+	thePROTOCOL_Ctrlr.PROTOCOL_params.src = 9;
+	thePROTOCOL_Ctrlr.PROTOCOL_params.dst = 65536;
+	thePROTOCOL_Ctrlr.PROTOCOL_params.channel = "channel1";
+
 }
 void JProtocol::CloseMater()
 {
 	if (socketopen)CloseSocket(serversoc);
 	socketopen = false;
-	delete jqueue;
-	jqueue = NULL;
+	//delete jqueue;
+	//jqueue = NULL;
 	TRACE(_T("Close Server\n"));
 
 }
-
-
 void JProtocol::SetCallBackFunc(void(*callBackFunc)(int, ResponeData))
 {
-	RequestCallBackFunc = callBackFunc;
+	RequestCallBackFunc = callBackFunc;//»Øµ÷ÉèÖÃ
 }
-
 void JProtocol::onData(void(*func)(int, ResponeData), int command, ResponeData data)
 {
 	WaitForSingleObject(ondata_locker, INFINITE);
@@ -66,7 +89,6 @@ void JProtocol::onData(void(*func)(int, ResponeData), int command, ResponeData d
 	ReleaseMutex(ondata_locker);
 
 }
-
 void JProtocol::Start()
 {
 	bool status = false;
@@ -77,7 +99,6 @@ void JProtocol::Start()
 	}
 
 }
-
 bool JProtocol::InitSocket()
 {
 	if (socketopen)
@@ -108,16 +129,17 @@ bool JProtocol::InitSocket()
 		CloseSocket(serversoc);
 		return false;
 	}
+	socketopen = true;
 
+	//CreatDataProcessThread();
 	CreatProtocolParseThread();
 	CreateListenThread();
 
-	socketopen = true;
+	/*socketopen = true;*/
 
 	return true;
 
 }
-
 void JProtocol::CreateListenThread()
 {
 	listen_thread_handle = (HANDLE)_beginthreadex(NULL, 0, (unsigned int(__stdcall*)(void *))ListenThread, this, 0, NULL);
@@ -128,7 +150,6 @@ void JProtocol::CreateListenThread()
 	}
 
 }
-
 void JProtocol::CreatProtocolParseThread()
 {
 	parse_thread_handle = (HANDLE)_beginthreadex(NULL, 0, (unsigned int(__stdcall*)(void *))ProtocolParseThread, this, 0, NULL);
@@ -140,6 +161,40 @@ void JProtocol::CreatProtocolParseThread()
 
 }
 
+void JProtocol::DataProcessFunc()
+{
+	switch (thePROTOCOL_Ctrlr.MASTER_State)
+	{
+	case PROTOCOL_UNCONNECTEDWAITINGSTATUS:
+			if ((thePROTOCOL_Ctrlr.name == "Connect") && (thePROTOCOL_Ctrlr.type == "Request"))
+			{
+				TRACE(_T("the ThirdParty Request Connect\n"));
+				if (RequestCallBackFunc != NULL)
+				{
+					ResponeData r = { thePROTOCOL_Ctrlr.identifier, thePROTOCOL_Ctrlr.PROTOCOL_params.key, 
+						"", -1, -1, -1, -1, "", "" };
+
+					onData(RequestCallBackFunc, CONNECT, r);//callback (*func)
+
+					thePROTOCOL_Ctrlr.MASTER_State = PROTOCOL_UNCONNECTEDWAITINGSETLISTENING;
+				}
+
+			}
+
+
+			break;
+
+	case PROTOCOL_UNCONNECTEDWAITINGSETLISTENING:
+		break;
+
+	case PROTOCOL_CONNECTED:
+		break;
+	default:
+		break;
+	}
+
+
+}
 int JProtocol::ProtocolParseThread(void *p)
 {
 	JProtocol *arg = (JProtocol*)p;
@@ -154,7 +209,7 @@ void JProtocol::ProtocolParseThreadFunc()
 	std::string str_identifier;
 	std::string str_type;
 	std::string str_name;
-
+	std::string str_status;
 	Json::Value val;
 	Json::Reader reader;
 
@@ -163,36 +218,48 @@ void JProtocol::ProtocolParseThreadFunc()
 	int32_t return_value = -1;
 	memset(queue_data, 0x00, 512);
 
-	while (jqueue!=NULL)
+	while ((return_value = jqueue.TakeFromQueue(queue_data, (int&)len, 200)) != WAIT_FAILED)//200ms
 	{
-		return_value = jqueue->TakeFromQueue(queue_data, (int&)len);
-		//if (0 == return_value)
 		if (WAIT_OBJECT_0 == return_value)
 		{
-			if (reader.parse(queue_data, val))
+			if (reader.parse(queue_data, val))//Parse JSON buff
 			{
+				thePROTOCOL_Ctrlr.identifier = val["identifier"].asString();
+				thePROTOCOL_Ctrlr.type = val["type"].asString();
+				thePROTOCOL_Ctrlr.name = val["name"].asString();
 
-				str_type = val["type"].asString();
-				TRACE(("type : %s\n"), str_type.c_str());
+				if (thePROTOCOL_Ctrlr.name == "Connect")
+					thePROTOCOL_Ctrlr.PROTOCOL_params.key = val["key"].asString();
+				else if (thePROTOCOL_Ctrlr.name == "Listening")
+				{
+					thePROTOCOL_Ctrlr.PROTOCOL_params.Listening_channles.channel1_value = val["param"]["listening"]["channel1"].asInt();
+					thePROTOCOL_Ctrlr.PROTOCOL_params.Listening_channles.channel2_value = val["param"]["listening"]["channel2"].asInt();
+				}
+				else if (thePROTOCOL_Ctrlr.name == "Query")
+				{
+					//no param data
+				}
+				else if ((thePROTOCOL_Ctrlr.name == "CallRequest") || (thePROTOCOL_Ctrlr.name == "CallRelease")
+					|| (thePROTOCOL_Ctrlr.name == "CallStart") || (thePROTOCOL_Ctrlr.name == "CallEnd"))
+				{
+					thePROTOCOL_Ctrlr.PROTOCOL_params.src = val["param"]["src"].asInt();
+					thePROTOCOL_Ctrlr.PROTOCOL_params.dst = val["param"]["dst"].asInt();
+					thePROTOCOL_Ctrlr.PROTOCOL_params.channel = val["param"]["channel"].asString();
+	
+				}
+				else
+				{
+					//other data
 
-				str_name = val["name"].asString();
-				TRACE(("name : %s\n"), str_name.c_str());
-
-				str_identifier = val["identifier"].asString();
-				TRACE(("identifier : %s\n"), str_identifier.c_str());
-
+				}
+				DataProcessFunc();//process thePROTOCOL_Ctrlr data
 			}
 			else
 			{
 				TRACE(_T("reader.parse err!!!\n"));
 			}
-			
 			memset(queue_data, 0x00, 512);
 			
-		}
-		else if (WAIT_FAILED == return_value)
-		{
-			break;
 		}
 		else
 		{
@@ -200,7 +267,6 @@ void JProtocol::ProtocolParseThreadFunc()
 		}
 
 	}
-	//jqueue->ClearQueue();
 	TRACE(_T(" exit ProtocolParseThreadFunc\n"));
 }
 int JProtocol::ListenThread(void* p)
@@ -212,7 +278,6 @@ int JProtocol::ListenThread(void* p)
 	}
 	return 0;
 }
-
 void JProtocol::ListenThreadFunc()
 {
 	int sin_size = 0;
@@ -255,35 +320,10 @@ void JProtocol::ProcessClient(SOCKET clientfd)
 	TRACE(_T("Connected\n"));
 	while (islistenstatus)
 	{
-		memset(recvbuf, 0, BUFLENGTH);
 		if ((recv_length = recv(clientfd, recvbuf, BUFLENGTH, 0)) > 0)
 		{
-
-		/*	if (reader.parse(recvbuf, val))
-			{
-
-				str_type = val["type"].asString();
-				TRACE(("type : %s\n"), str_type.c_str());
-
-				str_name = val["name"].asString();
-				TRACE(("name : %s\n"), str_name.c_str());
-
-				str_identifier = val["identifier"].asString();
-				TRACE(("identifier : %s\n"), str_identifier.c_str());
-
-			}
-			else
-			{
-				TRACE(_T("reader.parse err!!!\n"));
-			}
-*/
-			/*	TRACE(_T("recv_length : %d\n"), recv_length);
-
-			TRACE(_T("recv[0] : %c\n"), recvbuf[0]);*/
-
 			if (recvbuf[0] == 'Q')break;
-			jqueue->PushToQueue(recvbuf, recv_length);
-			
+			jqueue.PushToQueue(recvbuf, recv_length);//push to fifo-buff	
 		}
 		else
 		{
@@ -303,6 +343,7 @@ void JProtocol::ProcessClient(SOCKET clientfd)
 			}
 			
 		}
+		memset(recvbuf, 0, BUFLENGTH);//clear recvbuf[BUFLENGTH];
 
 	}
 

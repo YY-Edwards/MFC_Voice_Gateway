@@ -1,13 +1,13 @@
 /*
- * JsonQueue.c
+ * FifoQueue.c
  *
  * Created: 2016/12/19
  * Author: EDWARDS
  */ 
 #include "stdafx.h"
-#include "JsonQueue.h"
+#include "FifoQueue.h"
 
-JsonQueue::JsonQueue()
+FifoQueue::FifoQueue()
 {
 	
 	m_hLocker = CreateMutex(nullptr, FALSE, (LPCWSTR)"queuelocker");
@@ -21,7 +21,7 @@ JsonQueue::JsonQueue()
 
 	
 }
-JsonQueue::~JsonQueue()
+FifoQueue::~FifoQueue()
 {
 	CloseHandle(m_hLocker);
 	CloseHandle(m_hSemaphore);
@@ -29,7 +29,7 @@ JsonQueue::~JsonQueue()
 	
 }
 
-void JsonQueue::ClearQueue()
+void FifoQueue::ClearQueue()
 {
 	EnterCriticalSection(&cs);
 	//WaitForSingleObject(m_hLocker, INFINITE);//等待互斥句柄触发
@@ -40,12 +40,12 @@ void JsonQueue::ClearQueue()
 }
 
 
-bool  JsonQueue::QueueIsEmpty()
+bool  FifoQueue::QueueIsEmpty()
 {
 	return(m_list.empty());
 	//return(m_queue.empty());
 }
-bool JsonQueue::PushToQueue(void *packet, int len)
+bool FifoQueue::PushToQueue(void *packet, int len)
 {
 	int err = 0;
 	static int counter = 0;
@@ -71,12 +71,12 @@ bool JsonQueue::PushToQueue(void *packet, int len)
 
 }
 
-int32_t JsonQueue::TakeFromQueue(void *packet, int& len)
+int32_t FifoQueue::TakeFromQueue(void *packet, int& len, int waittime)
 {
 
 	char* sBuffer = NULL;
 
-	DWORD ret = WaitForSingleObject(m_hSemaphore, 200);//等待信号量触发
+	DWORD ret = WaitForSingleObject(m_hSemaphore, waittime);//等待信号量触发
 	if (ret != WAIT_OBJECT_0)
 	{
 		return ret;
@@ -97,7 +97,7 @@ int32_t JsonQueue::TakeFromQueue(void *packet, int& len)
 			//if (sBuffer > (&fifobuff[19][0]))return -1;
 			memcpy_s(packet, 512, sBuffer, 512);
 			len = 512;
-			return 0;
+			return ret;
 	}
 	else
 	{

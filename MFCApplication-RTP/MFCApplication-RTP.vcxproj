@@ -106,7 +106,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common.h" />
-    <ClInclude Include="JsonQueue.h" />
+    <ClInclude Include="FifoQueue.h" />
     <ClInclude Include="MFCApplication-RTP.h" />
     <ClInclude Include="MFCApplication-RTPDlg.h" />
     <ClInclude Include="myprotocol.h" />
@@ -116,7 +116,7 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="JsonQueue.cpp">
+    <ClCompile Include="FifoQueue.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="MFCApplication-RTP.cpp" />

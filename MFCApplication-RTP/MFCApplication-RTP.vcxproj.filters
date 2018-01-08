@@ -42,7 +42,7 @@
     <ClInclude Include="Common.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="JsonQueue.h">
+    <ClInclude Include="FifoQueue.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -62,7 +62,7 @@
     <ClCompile Include="myprotocol.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="JsonQueue.cpp">
+    <ClCompile Include="FifoQueue.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

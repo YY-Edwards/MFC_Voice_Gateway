@@ -11,7 +11,7 @@
 #include "Common.h"
 #include "myrtp.h"
 #include "json.h"
-#include "JsonQueue.h"
+#include "FifoQueue.h"
 
 class JProtocol
 {
@@ -77,20 +77,25 @@ public:
 
 private:
 
-	HANDLE ondata_locker;
 	//回调接口
 	void(*RequestCallBackFunc)(int, ResponeData);//请求类回调
 	//void(*NotifyCallBackFunc)(int, ResponeData);//通知类回调
 	void onData(void(*func)(int, ResponeData), int command, ResponeData data);
 
+	void ProcessClient(SOCKET clientfd);
+	void CreateListenThread();
+	void CreatProtocolParseThread();
+	//void CreatDataProcessThread();
+
 	static int ListenThread(void* p);
 	void ListenThreadFunc();
 	static int ProtocolParseThread(void *p);
 	void ProtocolParseThreadFunc();
+	//static int  DataProcessThread(void *p);
+	//void DataProcessThreadFunc();
 
-	void ProcessClient(SOCKET clientfd);
-	void CreateListenThread();
-	void CreatProtocolParseThread();
+	void DataProcessFunc();
+
 	/*
 	socket初始化
 	*/
@@ -98,14 +103,23 @@ private:
 	bool islistenstatus;
 	bool InitSocket();
 	bool CloseSocket(SOCKET sockfd);
+	void InitProtocolData();
+
+	HANDLE ondata_locker;
 	SOCKET serversoc;
 	//SOCKET clientsoc;
 	struct sockaddr_in my_addr; /* loacl */
 	struct sockaddr_in remote_addr; //client_address
+
 	HANDLE listen_thread_handle;
 	HANDLE parse_thread_handle;
+	HANDLE data_thread_handle;
+
 	char recvbuf[BUFLENGTH];
-	JsonQueue *jqueue;
+	//FifoQueue *jqueue;
+	FifoQueue jqueue;//JSON data queue
+	//FifoQueue dqueue;//PROTOCOL_Ctrlr data queue
+	PROTOCOL_Ctrlr thePROTOCOL_Ctrlr;
 
 };
 
