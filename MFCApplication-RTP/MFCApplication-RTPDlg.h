@@ -40,6 +40,11 @@ public:
 	MyRTP *channel1RTP;
 	MyRTP *channel2RTP;
 	JProtocol *mastergate;
+
+	static CMFCApplicationRTPDlg *pThis;
+	//callbackfunc
+	static void  MasterOnData(int command, ResponeData data);
+	void  MasterOnDataFunc(int command, ResponeData data);
 	
 
 	afx_msg void OnBnClickedButton_TCPInit();

@@ -34,7 +34,7 @@ public:
 	/*
 	连接回复
 	*/
-	void ConnectReply();
+	void ConnectReply(std::string status, std::string reason="");
 
 	/*
 	配置回复
@@ -95,19 +95,21 @@ private:
 	//void DataProcessThreadFunc();
 
 	void DataProcessFunc();
+	int SendDataToTheThirdParty(std::string buff);
 
 	/*
 	socket初始化
 	*/
 	bool socketopen;
-	bool islistenstatus;
+	//bool islistenstatus;
 	bool InitSocket();
 	bool CloseSocket(SOCKET sockfd);
 	void InitProtocolData();
 
 	HANDLE ondata_locker;
+	HANDLE clientmap_locker;
+	//SOCKET currentclientsoc;
 	SOCKET serversoc;
-	//SOCKET clientsoc;
 	struct sockaddr_in my_addr; /* loacl */
 	struct sockaddr_in remote_addr; //client_address
 
@@ -116,11 +118,18 @@ private:
 	HANDLE data_thread_handle;
 
 	char recvbuf[BUFLENGTH];
-	//FifoQueue *jqueue;
+
 	FifoQueue jqueue;//JSON data queue
-	//FifoQueue dqueue;//PROTOCOL_Ctrlr data queue
+
 	PROTOCOL_Ctrlr thePROTOCOL_Ctrlr;
 	std::map <std::string, int>  statemap;
+	std::map <SOCKET, struct sockaddr_in>  clientmap;//save client-info
+
+	Json::Value send_root;
+	Json::Value send_arrayObj;
+	Json::Value send_item;
+	Json::StyledWriter style_write;
+
 
 };
 

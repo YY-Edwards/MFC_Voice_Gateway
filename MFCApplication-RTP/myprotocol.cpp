@@ -20,6 +20,7 @@ JProtocol::~JProtocol()
 	CloseHandle(listen_thread_handle);
 	CloseHandle(parse_thread_handle);
 	CloseHandle(data_thread_handle);
+	CloseHandle(clientmap_locker);
 	/*if (jqueue != NULL)
 	{
 		delete jqueue;
@@ -31,14 +32,16 @@ void JProtocol::InitProtocolData()
 {
 	socketopen = false;
 	serversoc = 0;;
-	islistenstatus = false;
+	//islistenstatus = false;
 	listen_thread_handle = NULL;
 	parse_thread_handle = NULL;
 	data_thread_handle = NULL;
 	memset(recvbuf, 0x00, BUFLENGTH);
+	RequestCallBackFunc = NULL;
 
 	//jqueue = new FifoQueue;
 	ondata_locker = CreateMutex(nullptr, FALSE, (LPCWSTR)"ondata");
+	clientmap_locker = CreateMutex(nullptr, FALSE, (LPCWSTR)"clientmap");
 
 	//inset states
 	statemap.insert(std::pair<string, int>("Connect", CONNECT));
@@ -209,7 +212,7 @@ void JProtocol::DataProcessFunc()
 		thePROTOCOL_Ctrlr.PROTOCOL_params.src, thePROTOCOL_Ctrlr.PROTOCOL_params.dst,
 		"", "" };
 
-		//onData(RequestCallBackFunc, statemap.find(thePROTOCOL_Ctrlr.name)->second, r);//callback (*func)
+		onData(RequestCallBackFunc, statemap.find(thePROTOCOL_Ctrlr.name)->second, r);//callback (*func)
 	}
 
 
@@ -225,10 +228,10 @@ int JProtocol::ProtocolParseThread(void *p)
 }
 void JProtocol::ProtocolParseThreadFunc()
 {
-	std::string str_identifier;
+	/*std::string str_identifier;
 	std::string str_type;
 	std::string str_name;
-	std::string str_status;
+	std::string str_status;*/
 	Json::Value val;
 	Json::Reader reader;
 
@@ -279,8 +282,7 @@ void JProtocol::ProtocolParseThreadFunc()
 			{
 				TRACE(_T("reader.parse err!!!\n"));
 			}
-			memset(queue_data, 0x00, 512);
-			
+			memset(queue_data, 0x00, 512);		
 		}
 		else
 		{
@@ -304,7 +306,7 @@ void JProtocol::ListenThreadFunc()
 	int sin_size = 0;
 	sin_size = sizeof(struct sockaddr_in);
 	SOCKET currentclientsoc;
-
+	
 	if ((currentclientsoc = accept(serversoc, (sockaddr*)&remote_addr, &sin_size)) < 0)
 	{
 		TRACE(_T("accept fail!\n"));
@@ -317,13 +319,20 @@ void JProtocol::ListenThreadFunc()
 	}
 	else
 	{
-		islistenstatus = true;
-		ProcessClient(currentclientsoc);//while()
+		WaitForSingleObject(clientmap_locker, INFINITE);
+		clientmap.insert(std::pair<SOCKET, struct sockaddr_in>(currentclientsoc, remote_addr));//save client info(socketfd,ip,port...) to map
+		ReleaseMutex(clientmap_locker);
+		//islistenstatus = true;
+		ProcessClient(currentclientsoc);//while(1)
 	}
 	
+	WaitForSingleObject(clientmap_locker, INFINITE);
+	clientmap.erase(currentclientsoc);
+	ReleaseMutex(clientmap_locker);
+
 	CloseSocket(currentclientsoc);
-	islistenstatus = false;
-	TRACE(_T("Close socket and exit listenthread\n"));
+	//islistenstatus = false;
+	TRACE(_T("Erase clientfd ,Close socket and exit listenthread\n"));
 
 
 
@@ -342,7 +351,8 @@ void JProtocol::ProcessClient(SOCKET clientfd)
 	//设置RECV超时
 	setsockopt(clientfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&recvTimeout, sizeof(int));
 	TRACE(_T("Connected\n"));
-	while (islistenstatus)
+	//while (islistenstatus)
+	while (1)
 	{
 		if ((recv_length = recv(clientfd, &recvbuf[count], BUFLENGTH, 0)) > 0)
 		{
@@ -420,9 +430,9 @@ void JProtocol::ProcessClient(SOCKET clientfd)
 				{
 					TRACE(_T("need  to dismantle the buff-2\n"));
 					jqueue.PushToQueue(&recvbuf[5], pro_length);//push to fifo-buff
-					memcpy_s(&recvbuf[0], BUFLENGTH, &recvbuf[pro_length+5], (recv_length - bytes_remained));
+					memcpy_s(&recvbuf[0], BUFLENGTH, &recvbuf[pro_length + 5], (count + recv_length - pro_length - 5));
 
-					recv_length = (recv_length - bytes_remained);
+					recv_length = count + recv_length - pro_length - 5;
 					bytes_remained = 0;
 					count = recv_length;
 					goto Start;
@@ -432,8 +442,11 @@ void JProtocol::ProcessClient(SOCKET clientfd)
 			}
 			else//bytes_remained < 0
 			{
+				pro_length = 0;
+				count = 0;
+				bytes_remained = 0;
 				memset(recvbuf, 0, BUFLENGTH);
-				TRACE(_T("no happen!!!\n"));
+				TRACE(_T("Recv err data and clear temp!!!\n"));
 			}
 
 
@@ -466,5 +479,124 @@ bool JProtocol::CloseSocket(SOCKET sockfd)
 {
 	closesocket(sockfd);
 	return true;
+
+}
+
+int JProtocol::SendDataToTheThirdParty(std::string buff)
+{
+	int copy_len = -1;
+	int count = 0;
+	int return_value = 0;
+	char send_buff[1024];
+	char len_buff[4];
+	int pro_len = 0;
+	int temp_s = 0;
+	int temp_r = 0;
+	memset(len_buff, 0x00, 4);
+	memset(send_buff, 0x00, 1024);
+
+	temp_s = buff.size() / 1000;
+	temp_r = buff.size() % 1000;
+	len_buff[0] = temp_s;//千位
+
+	temp_s = temp_r / 100;
+	temp_r = temp_r % 100;
+	len_buff[1] = temp_s;//百位
+
+	temp_s = temp_r / 10;
+	temp_r = temp_r % 10;
+	len_buff[2] = temp_s;//十位
+	len_buff[3] = temp_r;//个位
+
+	//build protocol data
+	send_buff[0] = PROTOCOL_HEAD;
+	memcpy_s(&send_buff[1], 4, len_buff, 4);
+	memcpy_s(&send_buff[5], buff.size(), buff.c_str(), buff.size());
+	pro_len = 5 + buff.size();
+
+	if (!clientmap.empty())
+	{
+		SOCKET Objsoc =0;
+		WaitForSingleObject(clientmap_locker, INFINITE);
+		Objsoc = clientmap.begin()->first;
+		ReleaseMutex(clientmap_locker);
+
+		do
+		{
+			copy_len = send(Objsoc, &send_buff[count], (pro_len-count), 0);
+			if (copy_len < 0)
+			{
+				count = -1;
+				TRACE(_T("send SOCKET_ERROR!!!\n"));
+				break;
+			}
+			else
+			{
+				count += copy_len;
+				TRACE(("send length is %d\n"), copy_len);
+			}
+
+		} while ((pro_len-count) != 0);
+
+	}
+	else
+	{
+		TRACE(_T("clientmap is empty!!!\n"));
+	}
+
+	count = 0;
+	return count;
+}
+
+void JProtocol::ConnectReply(std::string status, std::string reason)
+{
+	send_item["status"] = status;
+	send_item["reason"] = reason;
+	send_arrayObj.append(send_item);
+
+	send_root["identifier"] = "2017010915420322";
+	send_root["type"] = "Reply";
+	send_root["name"] = "Connect";
+
+	send_root["param"] = send_arrayObj;
+
+	send_root.toStyledString();
+
+	std::string SendBuf = style_write.write(send_root);
+
+	SendDataToTheThirdParty(SendBuf);
+	SendBuf.clear();
+	TRACE(_T("Send ConnectReply\n"));
+
+}
+
+void JProtocol::ConfigReply()
+{
+	TRACE(_T("Send ConfigReply\n"));
+
+}
+void JProtocol::QueryReply()
+{
+	TRACE(_T("Send QueryReply\n"));
+
+}
+void JProtocol::CallRequestReply()
+{
+	TRACE(_T("Send CallRequestReply\n"));
+
+}
+void JProtocol::CallReleaseReply()
+{
+	TRACE(_T("Send CallReleaseReply\n"));
+
+}
+void JProtocol::CallStartNotify()
+{
+	TRACE(_T("Send CallStartNotify\n"));
+
+}
+void JProtocol::CallEndNotify()
+{
+	TRACE(_T("Send CallEndNotify\n"));
 
 }

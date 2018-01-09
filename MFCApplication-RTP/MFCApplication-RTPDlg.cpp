@@ -12,6 +12,7 @@
 #define new DEBUG_NEW
 #endif
 
+CMFCApplicationRTPDlg *CMFCApplicationRTPDlg::pThis = NULL;
 
 // 用于应用程序“关于”菜单项的 CAboutDlg 对话框
 
@@ -56,6 +57,7 @@ CMFCApplicationRTPDlg::CMFCApplicationRTPDlg(CWnd* pParent /*=NULL*/)
 	WSADATA dat;
 	WSAStartup(MAKEWORD(2, 2), &dat);//init socket
 
+	pThis = this;
 	channel1RTP = new MyRTP;
 	mastergate = new JProtocol;
 	//myreceiver = new MyRTPReceiver;
@@ -203,10 +205,57 @@ void CMFCApplicationRTPDlg::OnBnClickedButton1()
 }
 
 
+
+void CMFCApplicationRTPDlg::MasterOnData(int command, ResponeData data)
+{
+
+	if (pThis == NULL)exit(-1);
+	pThis->MasterOnDataFunc(command, data);
+
+}
+void CMFCApplicationRTPDlg::MasterOnDataFunc(int command, ResponeData data)
+{
+	PROTOCOL_Names pro_name = (PROTOCOL_Names)command;
+	switch (pro_name)
+	{
+	case CONNECT:
+			mastergate->ConnectReply("success", "fine!");
+		break;
+
+
+	case LISTENING:
+			mastergate->ConfigReply();
+		break;
+
+	case QUERY:
+			mastergate->QueryReply();
+		break;
+
+
+	case CALLREQUEST:
+			mastergate->CallRequestReply();
+		break;
+
+	case CALLRELEASE:
+			mastergate->CallRequestReply();
+		break;
+	default:
+
+		break;
+
+
+	}
+
+	TRACE(_T("MasterOnDataFunc finished\n"));
+
+}
+
+
 void CMFCApplicationRTPDlg::OnBnClickedButton_TCPInit()
 {
 	
-	mastergate->Start();
+	mastergate->SetCallBackFunc(MasterOnData);//设置回调函数
+	mastergate->Start();//启动master
 	
 	CWnd *pWnd1 = GetDlgItem(IDC_BUTTON2);
 	pWnd1->EnableWindow(FALSE);
