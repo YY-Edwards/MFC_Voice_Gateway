@@ -67,11 +67,13 @@ CMFCApplicationRTPDlg::CMFCApplicationRTPDlg(CWnd* pParent /*=NULL*/)
 
 CMFCApplicationRTPDlg::~CMFCApplicationRTPDlg()
 {
-	WSACleanup();
+	/*WSACleanup();*/
 	if (channel1RTP->IsActive())channel1RTP->BYEDestroy(RTPTime(0, 10), "Time's up", 9);
 	if (channel1RTP != NULL)delete channel1RTP;
 	mastergate->CloseMater();
+	WSACleanup();
 	if (mastergate != NULL)delete mastergate;
+
 
 }
 

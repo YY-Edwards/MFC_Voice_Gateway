@@ -282,6 +282,7 @@ void JProtocol::ProtocolParseThreadFunc()
 			{
 				TRACE(_T("reader.parse err!!!\n"));
 			}
+			val.clear();
 			memset(queue_data, 0x00, 512);		
 		}
 		else
@@ -497,16 +498,16 @@ int JProtocol::SendDataToTheThirdParty(std::string buff)
 
 	temp_s = buff.size() / 1000;
 	temp_r = buff.size() % 1000;
-	len_buff[0] = temp_s;//千位
+	len_buff[0] = temp_s + 0x30;//千位
 
 	temp_s = temp_r / 100;
 	temp_r = temp_r % 100;
-	len_buff[1] = temp_s;//百位
+	len_buff[1] = temp_s + 0x30;//百位
 
 	temp_s = temp_r / 10;
 	temp_r = temp_r % 10;
-	len_buff[2] = temp_s;//十位
-	len_buff[3] = temp_r;//个位
+	len_buff[2] = temp_s + 0x30;//十位
+	len_buff[3] = temp_r + 0x30;//个位
 
 	//build protocol data
 	send_buff[0] = PROTOCOL_HEAD;
@@ -550,6 +551,12 @@ int JProtocol::SendDataToTheThirdParty(std::string buff)
 
 void JProtocol::ConnectReply(std::string status, std::string reason)
 {
+	
+	Json::Value send_root;
+	Json::Value send_arrayObj;
+	Json::Value send_item;
+	Json::StyledWriter style_write;
+
 	send_item["status"] = status;
 	send_item["reason"] = reason;
 	send_arrayObj.append(send_item);
@@ -565,7 +572,10 @@ void JProtocol::ConnectReply(std::string status, std::string reason)
 	std::string SendBuf = style_write.write(send_root);
 
 	SendDataToTheThirdParty(SendBuf);
-	SendBuf.clear();
+	//SendBuf.clear();
+	//send_root.clear();
+	//send_arrayObj.clear();
+	//send_item.clear();
 	TRACE(_T("Send ConnectReply\n"));
 
 }

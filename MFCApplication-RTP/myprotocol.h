@@ -95,6 +95,7 @@ private:
 	//void DataProcessThreadFunc();
 
 	void DataProcessFunc();
+	//void WriteJsonData();
 	int SendDataToTheThirdParty(std::string buff);
 
 	/*
@@ -125,10 +126,10 @@ private:
 	std::map <std::string, int>  statemap;
 	std::map <SOCKET, struct sockaddr_in>  clientmap;//save client-info
 
-	Json::Value send_root;
-	Json::Value send_arrayObj;
-	Json::Value send_item;
-	Json::StyledWriter style_write;
+	//Json::Value send_root;
+	//Json::Value send_arrayObj;
+	//Json::Value send_item;
+	//Json::StyledWriter style_write;
 
 
 };
