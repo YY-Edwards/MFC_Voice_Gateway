@@ -204,9 +204,12 @@ void JProtocol::DataProcessFunc()
 	if (RequestCallBackFunc != NULL)
 	{
 		ResponeData r = { thePROTOCOL_Ctrlr.identifier, thePROTOCOL_Ctrlr.PROTOCOL_params.key,
-			"", -1, -1, -1, -1, "", "" };
+		thePROTOCOL_Ctrlr.PROTOCOL_params.channel, thePROTOCOL_Ctrlr.PROTOCOL_params.Channel1_Param.channel_value,
+		thePROTOCOL_Ctrlr.PROTOCOL_params.Channel1_Param.channel_value,
+		thePROTOCOL_Ctrlr.PROTOCOL_params.src, thePROTOCOL_Ctrlr.PROTOCOL_params.dst,
+		"", "" };
 
-		onData(RequestCallBackFunc, statemap.find(thePROTOCOL_Ctrlr.name)->second, r);//callback (*func)
+		//onData(RequestCallBackFunc, statemap.find(thePROTOCOL_Ctrlr.name)->second, r);//callback (*func)
 	}
 
 
@@ -345,72 +348,91 @@ void JProtocol::ProcessClient(SOCKET clientfd)
 		{
 			if ((recvbuf[0] == 'Q') && recv_length == 1)break;
 
+		Start:
+
 			if ((recvbuf[0] == 0x31) && (recv_length >= 5) && (bytes_remained == 0))
 			//if ((recvbuf[0] == 0x01) && (recv_length >= 5) && (bytes_remained ==0))//protocol start
 			{
-				pro_length = (recvbuf[1] - 0x30) * 1000 + (recvbuf[2] - 0x30) * 100
-					+ (recvbuf[3] - 0x30) * 10 + (recvbuf[4] - 0x30);
 
-				bytes_remained = pro_length -(recv_length-5);
-				if (bytes_remained == 0)
-				{
-					jqueue.PushToQueue(&recvbuf[5], pro_length);//push to fifo-buff
-					//clear temp
-					pro_length = 0;
-					count = 0;
-					memset(recvbuf, 0, BUFLENGTH);//clear recvbuf[BUFLENGTH];
-				}
-				else if (bytes_remained > 0)
-				{
-					count += recv_length;
-					continue;//wait the 
-					 
-				}
-				else//recv_length >(pro_length+5) (bytes_remained < 0)
-				{
-					jqueue.PushToQueue(&recvbuf[5], pro_length);//push to fifo-buff
+					pro_length = (recvbuf[1] - 0x30) * 1000 + (recvbuf[2] - 0x30) * 100
+						+ (recvbuf[3] - 0x30) * 10 + (recvbuf[4] - 0x30);
 
-					memcpy_s(&recvbuf[0], BUFLENGTH, &recvbuf[pro_length+5], recv_length - 5 - pro_length);
-					if (recvbuf[0] != 0x01)
+					if (recvbuf[5] != '{')
 					{
+						pro_length = 0;
+						count = 0;
+						memset(recvbuf, 0, BUFLENGTH);
+						continue;
+					}
+					bytes_remained = pro_length -(recv_length-5);
+
+					if (bytes_remained == 0)
+					{
+						TRACE(_T("recv_okay\n"));
+						jqueue.PushToQueue(&recvbuf[5], pro_length);//push to fifo-buff
+						//clear temp
+						pro_length = 0;
+						count = 0;
 						memset(recvbuf, 0, BUFLENGTH);//clear recvbuf[BUFLENGTH];
-						continue;//throw the buff
 					}
-					count += (recv_length - 5 - pro_length);
-					if (count >= 5)
+					else if (bytes_remained > 0)//need  to stick the buff
 					{
-						pro_length = (recvbuf[1] - 0x30) * 1000 + (recvbuf[2] - 0x30) * 100
-							+ (recvbuf[3] - 0x30) * 10 + (recvbuf[4] - 0x30);
+						TRACE(_T("need to stick the buff\n"));
+						count += recv_length;
+						//continue;//wait the 
+					 
+					}
+					else//recv_length >(pro_length+5) (bytes_remained < 0)//need  to dismantle the buff
+					{
+						TRACE(_T("need  to dismantle the buff\n"));
+						jqueue.PushToQueue(&recvbuf[5], pro_length);//push to fifo-buff
 
-						bytes_remained = pro_length - (recv_length - 5);
+						memcpy_s(&recvbuf[0], BUFLENGTH, &recvbuf[pro_length+5], recv_length - 5 - pro_length);
+
+						recv_length = recv_length - 5 - pro_length;
+						bytes_remained = 0;
+						count = recv_length;
+						goto Start;
+
 					}
-					else
-					{
-						TRACE(_T("bytes_remained err !!!\n"));
-					}
-				}
 
 			}
 			else if (bytes_remained >0)
 			{
-				bytes_remained = pro_length - recv_length;
-				if (bytes_remained == 0)
+				if (bytes_remained == recv_length)
 				{
+					TRACE(_T("recv_okay\n"));
 					jqueue.PushToQueue(&recvbuf[5], pro_length);//push to fifo-buff
 					//clear temp
 					pro_length = 0;
 					count = 0;
+					bytes_remained = 0;
 					memset(recvbuf, 0, BUFLENGTH);//clear recvbuf[BUFLENGTH];
 				}
-				else//bytes_remained > 0
+				else if (bytes_remained > recv_length)
 				{
+					TRACE(_T("need to stick the buff-2\n"));
+					bytes_remained -= recv_length;
 					count += recv_length;
-					continue;//wait the 
+					//continue;//wait the 
+				}
+				else//bytes_remained < recv_length
+				{
+					TRACE(_T("need  to dismantle the buff-2\n"));
+					jqueue.PushToQueue(&recvbuf[5], pro_length);//push to fifo-buff
+					memcpy_s(&recvbuf[0], BUFLENGTH, &recvbuf[pro_length+5], (recv_length - bytes_remained));
+
+					recv_length = (recv_length - bytes_remained);
+					bytes_remained = 0;
+					count = recv_length;
+					goto Start;
+
 				}
 
 			}
 			else//bytes_remained < 0
 			{
+				memset(recvbuf, 0, BUFLENGTH);
 				TRACE(_T("no happen!!!\n"));
 			}
 
@@ -434,7 +456,7 @@ void JProtocol::ProcessClient(SOCKET clientfd)
 			}
 			
 		}
-		//memset(recvbuf, 0, BUFLENGTH);//clear recvbuf[BUFLENGTH];
+		
 
 	}
 
