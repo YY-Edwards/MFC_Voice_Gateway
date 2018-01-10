@@ -604,7 +604,7 @@ void JProtocol::ConnectReply(std::string status, std::string reason)
 
 	send_root["param"] = send_arrayObj;
 
-	send_root.toStyledString();
+	send_root.toStyledString();//build json data
 
 	std::string SendBuf = style_write.write(send_root);
 
