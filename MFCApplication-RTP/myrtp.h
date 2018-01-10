@@ -39,7 +39,7 @@ public:
 		uint8_t *GetRTPPayloadData();
 		uint32_t GetRTPPayloadDataLength();
 		uint32_t GetRTPSSRC();
-		void Set_Exit_Flag()   {thread_exit_flag = true; };
+
 protected:
 
 		static int OnPollThread(void* p);
@@ -49,9 +49,18 @@ protected:
 	
 	
 	private:
+
+		void SetThreadExitFlag()   { set_thread_exit_flag = true; }
+		bool IsThreadHasExit() {
+			if (rx_rtp_handle)return thread_exited_flag;
+			else
+				return true;
+
+		}
 		void CheckError(int rtperr);
 		bool poll_thread_isactive;
-		bool thread_exit_flag;
+		bool set_thread_exit_flag;
+		bool thread_exited_flag;
 		uint32_t ssrc;
 		uint32_t payloaddatalength;
 		uint8_t* payloaddata;

@@ -16,11 +16,28 @@ JProtocol::JProtocol()
 
 JProtocol::~JProtocol()
 {
+	
+	CloseMater();
+	//WSACleanup();
+	SetThreadExitFlag();
+	do
+	{
+		Sleep(30);
+	} while ((!(IsListenThreadHasExit())) || (!(IsParseThreadHasExit())));
+
 	CloseHandle(ondata_locker);
 	CloseHandle(listen_thread_handle);
 	CloseHandle(parse_thread_handle);
 	CloseHandle(data_thread_handle);
 	CloseHandle(clientmap_locker);
+	jqueue.ClearQueue();
+	statemap.clear();
+	clientmap.clear();
+
+	WSACleanup();
+	TRACE(_T("Destory: JProtocol \n"));
+
+
 	/*if (jqueue != NULL)
 	{
 		delete jqueue;
@@ -30,6 +47,14 @@ JProtocol::~JProtocol()
 
 void JProtocol::InitProtocolData()
 {
+	
+	WSADATA dat;
+	WSAStartup(MAKEWORD(2, 2), &dat);//init socket
+
+	set_thread_exit_flag = false;
+	listen_thread_exited_flag = false;
+	parse_thread_exited_flag = false;
+
 	socketopen = false;
 	serversoc = 0;;
 	//islistenstatus = false;
@@ -220,13 +245,14 @@ void JProtocol::DataProcessFunc()
 int JProtocol::ProtocolParseThread(void *p)
 {
 	JProtocol *arg = (JProtocol*)p;
+	int return_value = 0;
 	if (arg != NULL)
 	{
-		arg->ProtocolParseThreadFunc();
+		return_value = arg->ProtocolParseThreadFunc();
 	}
-	return 0;
+	return return_value;
 }
-void JProtocol::ProtocolParseThreadFunc()
+int JProtocol::ProtocolParseThreadFunc()
 {
 	/*std::string str_identifier;
 	std::string str_type;
@@ -237,11 +263,12 @@ void JProtocol::ProtocolParseThreadFunc()
 
 	char queue_data[512];
 	int len=0;
-	int32_t return_value = -1;
+	int return_value = -1;
 	memset(queue_data, 0x00, 512);
 
 	while ((return_value = jqueue.TakeFromQueue(queue_data, (int&)len, 200)) != WAIT_FAILED)//200ms
 	{
+		if (set_thread_exit_flag)break;
 		if (WAIT_OBJECT_0 == return_value)
 		{
 			if (reader.parse(queue_data, val))//Parse JSON buff
@@ -291,40 +318,44 @@ void JProtocol::ProtocolParseThreadFunc()
 		}
 
 	}
-	TRACE(_T(" exit ProtocolParseThreadFunc\n"));
+
+	TRACE((" exit ProtocolParseThreadFunc : 0x%x\n"), GetCurrentThreadId());
+	parse_thread_exited_flag = true;
+	return return_value;
 }
 int JProtocol::ListenThread(void* p)
 {
 	JProtocol *arg = (JProtocol*)p;
+	int return_value = 0;
 	if (arg != NULL)
 	{
-		arg->ListenThreadFunc();
+		return_value = arg->ListenThreadFunc();
 	}
-	return 0;
+	return return_value;
 }
-void JProtocol::ListenThreadFunc()
+int JProtocol::ListenThreadFunc()
 {
 	int sin_size = 0;
+	int return_value = 0;
 	sin_size = sizeof(struct sockaddr_in);
 	SOCKET currentclientsoc;
 	
-	if ((currentclientsoc = accept(serversoc, (sockaddr*)&remote_addr, &sin_size)) < 0)
-	{
-		TRACE(_T("accept fail!\n"));
-	}
+	TRACE(_T("The server is waiting for the connection \n"));
+	currentclientsoc = accept(serversoc, (sockaddr*)&remote_addr, &sin_size);
+
 	if (socketopen)CreateListenThread();//服务器运行中则继续监听
 
 	if (currentclientsoc == INVALID_SOCKET)
 	{
-		TRACE(_T("Connect fail\n"));
+		TRACE(_T("accept fail!\n"));
+		return_value = -1;
 	}
 	else
 	{
 		WaitForSingleObject(clientmap_locker, INFINITE);
 		clientmap.insert(std::pair<SOCKET, struct sockaddr_in>(currentclientsoc, remote_addr));//save client info(socketfd,ip,port...) to map
 		ReleaseMutex(clientmap_locker);
-		//islistenstatus = true;
-		ProcessClient(currentclientsoc);//while(1)
+		return_value = ProcessClient(currentclientsoc);//while(1)
 	}
 	
 	WaitForSingleObject(clientmap_locker, INFINITE);
@@ -332,16 +363,16 @@ void JProtocol::ListenThreadFunc()
 	ReleaseMutex(clientmap_locker);
 
 	CloseSocket(currentclientsoc);
-	//islistenstatus = false;
-	TRACE(_T("Erase clientfd ,Close socket and exit listenthread\n"));
+	TRACE(("Erase clientfd ,Close socket and exit listenthread: 0x%x\n"), GetCurrentThreadId());
+	listen_thread_exited_flag = true;
 
-
+	return return_value;
 
 }
 
-void JProtocol::ProcessClient(SOCKET clientfd)
+int JProtocol::ProcessClient(SOCKET clientfd)
 {
-
+	int return_value = 0;
 	int recvTimeout = 30 * 1000;   //30s
 	int recv_length = 0;
 	static int32_t bytes_remained = 0;
@@ -353,16 +384,20 @@ void JProtocol::ProcessClient(SOCKET clientfd)
 	setsockopt(clientfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&recvTimeout, sizeof(int));
 	TRACE(_T("Connected\n"));
 	//while (islistenstatus)
-	while (1)
+	while (!set_thread_exit_flag)
 	{
 		if ((recv_length = recv(clientfd, &recvbuf[count], BUFLENGTH, 0)) > 0)
 		{
-			if ((recvbuf[0] == 'Q') && recv_length == 1)break;
+			if ((recvbuf[0] == 'Q') && recv_length == 1)
+			{
+				return_value = 0;
+				break;
+			}
 
 		Start:
 
-			if ((recvbuf[0] == 0x31) && (recv_length >= 5) && (bytes_remained == 0))
-			//if ((recvbuf[0] == 0x01) && (recv_length >= 5) && (bytes_remained ==0))//protocol start
+			//if ((recvbuf[0] == 0x31) && (recv_length >= 5) && (bytes_remained == 0))
+			if ((recvbuf[0] == PROTOCOL_HEAD) && (recv_length >= 5) && (bytes_remained == 0))//protocol start
 			{
 
 					pro_length = (recvbuf[1] - 0x30) * 1000 + (recvbuf[2] - 0x30) * 100
@@ -466,6 +501,7 @@ void JProtocol::ProcessClient(SOCKET clientfd)
 			{
 
 				TRACE(_T("Close client\n"));
+				return_value = -1;
 				break;
 			}
 			
@@ -474,6 +510,7 @@ void JProtocol::ProcessClient(SOCKET clientfd)
 
 	}
 
+	return return_value;
 }
 
 bool JProtocol::CloseSocket(SOCKET sockfd)

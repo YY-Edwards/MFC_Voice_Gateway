@@ -73,8 +73,6 @@ public:
 	*/
 	void CloseMater();
 
-
-
 private:
 
 	//回调接口
@@ -82,15 +80,15 @@ private:
 	//void(*NotifyCallBackFunc)(int, ResponeData);//通知类回调
 	void onData(void(*func)(int, ResponeData), int command, ResponeData data);
 
-	void ProcessClient(SOCKET clientfd);
+	int ProcessClient(SOCKET clientfd);
 	void CreateListenThread();
 	void CreatProtocolParseThread();
 	//void CreatDataProcessThread();
 
 	static int ListenThread(void* p);
-	void ListenThreadFunc();
+	int ListenThreadFunc();
 	static int ProtocolParseThread(void *p);
-	void ProtocolParseThreadFunc();
+	int ProtocolParseThreadFunc();
 	//static int  DataProcessThread(void *p);
 	//void DataProcessThreadFunc();
 
@@ -126,6 +124,36 @@ private:
 	std::map <std::string, int>  statemap;
 	std::map <SOCKET, struct sockaddr_in>  clientmap;//save client-info
 
+	bool set_thread_exit_flag;
+	bool listen_thread_exited_flag;
+	bool parse_thread_exited_flag;
+
+	/*
+	设置线程退出标志
+	*/
+	void SetThreadExitFlag()   { set_thread_exit_flag = true; }
+
+	/*
+	获取监听线程是否退出
+	*/
+	bool IsListenThreadHasExit() 
+	{
+		if (listen_thread_handle)return listen_thread_exited_flag;
+		else
+			return true;
+
+	}
+
+	/*
+	获取解析线程是否退出
+	*/
+	bool IsParseThreadHasExit()
+	{
+		if (parse_thread_handle)return parse_thread_exited_flag;
+		else
+			return true;
+
+	}
 	//Json::Value send_root;
 	//Json::Value send_arrayObj;
 	//Json::Value send_item;

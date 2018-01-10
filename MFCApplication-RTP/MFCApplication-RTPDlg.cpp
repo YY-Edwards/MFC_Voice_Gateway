@@ -54,8 +54,8 @@ CMFCApplicationRTPDlg::CMFCApplicationRTPDlg(CWnd* pParent /*=NULL*/)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 
-	WSADATA dat;
-	WSAStartup(MAKEWORD(2, 2), &dat);//init socket
+	//WSADATA dat;
+	//WSAStartup(MAKEWORD(2, 2), &dat);//init socket
 
 	pThis = this;
 	channel1RTP = new MyRTP;
@@ -67,11 +67,9 @@ CMFCApplicationRTPDlg::CMFCApplicationRTPDlg(CWnd* pParent /*=NULL*/)
 
 CMFCApplicationRTPDlg::~CMFCApplicationRTPDlg()
 {
-	/*WSACleanup();*/
-	if (channel1RTP->IsActive())channel1RTP->BYEDestroy(RTPTime(0, 10), "Time's up", 9);
+	//WSACleanup();
+
 	if (channel1RTP != NULL)delete channel1RTP;
-	mastergate->CloseMater();
-	WSACleanup();
 	if (mastergate != NULL)delete mastergate;
 
 
@@ -185,20 +183,20 @@ void CMFCApplicationRTPDlg::OnBnClickedButton1()
 	pWnd1->EnableWindow(FALSE);
 
 	channel1RTP->Rtp_Init(55500, 57400, 1973);
-	uint8_t silencebuffer[320];
-	for (int i = 0; i < 320; i++)
-		silencebuffer[i] = 128;
+	//uint8_t silencebuffer[320];
+	//for (int i = 0; i < 320; i++)
+	//	silencebuffer[i] = 128;
 
-	for (int j = 0; j < 50; j++)
-	{
+	//for (int j = 0; j < 50; j++)
+	//{
 
-		channel1RTP->SendRTPPayloadData(silencebuffer, 320);
-		RTPTime::Wait(RTPTime(1, 20));
-		TRACE(_T(" Wait okay!\r\n"));
+	//	channel1RTP->SendRTPPayloadData(silencebuffer, 320);
+	//	RTPTime::Wait(RTPTime(1, 20));
+	//	TRACE(_T(" Wait okay!\r\n"));
 
-	}
-	
-	channel1RTP->Set_Exit_Flag();
+	//}
+	//
+	//channel1RTP->SetThreadExitFlag();
 	//channe21RTP->Rtp_Init(56500, 58400, 2012);
 
 	TRACE(_T(" channel1RTP->Rtp_Init okay!\r\n"));
