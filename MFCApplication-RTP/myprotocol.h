@@ -40,7 +40,7 @@ public:
 	≈‰÷√ªÿ∏¥
 	*/
 	
-	void ConfigReply();
+	void ConfigReply(int channel1_value, int channel2_value);
 
 	/*
 	≤È—Øªÿ∏¥

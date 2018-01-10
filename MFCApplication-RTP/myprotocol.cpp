@@ -85,17 +85,17 @@ void JProtocol::InitProtocolData()
 	thePROTOCOL_Ctrlr.PROTOCOL_params.key = "";
 	thePROTOCOL_Ctrlr.PROTOCOL_params.status = "fail";
 	thePROTOCOL_Ctrlr.PROTOCOL_params.reason = "";
-	thePROTOCOL_Ctrlr.PROTOCOL_params.Listening_channles.channel1_value = 55;
-	thePROTOCOL_Ctrlr.PROTOCOL_params.Listening_channles.channel2_value = 77;
-	thePROTOCOL_Ctrlr.PROTOCOL_params.Channel1_Param.reason = "";
+	thePROTOCOL_Ctrlr.PROTOCOL_params.Listening_channles.channel1_value = 0;
+	thePROTOCOL_Ctrlr.PROTOCOL_params.Listening_channles.channel2_value = 0;
+	thePROTOCOL_Ctrlr.PROTOCOL_params.Channel1_Param.reason = "timeout";
 	thePROTOCOL_Ctrlr.PROTOCOL_params.Channel1_Param.status = "fail";
-	thePROTOCOL_Ctrlr.PROTOCOL_params.Channel1_Param.channel_value = 55;
+	thePROTOCOL_Ctrlr.PROTOCOL_params.Channel1_Param.channel_value = 0;
 	thePROTOCOL_Ctrlr.PROTOCOL_params.Channel2_Param.reason = "";
 	thePROTOCOL_Ctrlr.PROTOCOL_params.Channel2_Param.status = "fail";
-	thePROTOCOL_Ctrlr.PROTOCOL_params.Channel2_Param.channel_value = 77;
+	thePROTOCOL_Ctrlr.PROTOCOL_params.Channel2_Param.channel_value = 0;
 	thePROTOCOL_Ctrlr.PROTOCOL_params.src = 9;
 	thePROTOCOL_Ctrlr.PROTOCOL_params.dst = 65536;
-	thePROTOCOL_Ctrlr.PROTOCOL_params.channel = "channel1";
+	thePROTOCOL_Ctrlr.PROTOCOL_params.channel = "";
 
 }
 void JProtocol::CloseMater()
@@ -233,7 +233,7 @@ void JProtocol::DataProcessFunc()
 	{
 		ResponeData r = { thePROTOCOL_Ctrlr.identifier, thePROTOCOL_Ctrlr.PROTOCOL_params.key,
 		thePROTOCOL_Ctrlr.PROTOCOL_params.channel, thePROTOCOL_Ctrlr.PROTOCOL_params.Channel1_Param.channel_value,
-		thePROTOCOL_Ctrlr.PROTOCOL_params.Channel1_Param.channel_value,
+		thePROTOCOL_Ctrlr.PROTOCOL_params.Channel2_Param.channel_value,
 		thePROTOCOL_Ctrlr.PROTOCOL_params.src, thePROTOCOL_Ctrlr.PROTOCOL_params.dst,
 		"", "" };
 
@@ -282,7 +282,10 @@ int JProtocol::ProtocolParseThreadFunc()
 				else if (thePROTOCOL_Ctrlr.name == "Listening")
 				{
 					thePROTOCOL_Ctrlr.PROTOCOL_params.Listening_channles.channel1_value = val["param"]["listening"]["channel1"].asInt();
+					thePROTOCOL_Ctrlr.PROTOCOL_params.Channel1_Param.channel_value = thePROTOCOL_Ctrlr.PROTOCOL_params.Listening_channles.channel1_value;
 					thePROTOCOL_Ctrlr.PROTOCOL_params.Listening_channles.channel2_value = val["param"]["listening"]["channel2"].asInt();
+					thePROTOCOL_Ctrlr.PROTOCOL_params.Channel2_Param.channel_value = thePROTOCOL_Ctrlr.PROTOCOL_params.Listening_channles.channel2_value;
+
 				}
 				else if (thePROTOCOL_Ctrlr.name == "Query")
 				{
@@ -617,9 +620,61 @@ void JProtocol::ConnectReply(std::string status, std::string reason)
 
 }
 
-void JProtocol::ConfigReply()
+void JProtocol::ConfigReply(int channel1_value, int channel2_value)
 {
+	Json::Value send_root;
+	Json::Value send_arrayObj1;
+	Json::Value send_arrayObj2;
+	Json::Value send_arrayObj3;
+	Json::Value send_item1;
+	Json::Value send_item2;
+	Json::Value send_item3;
+	Json::StyledWriter style_write;
+
+	if (channel1_value != 0)
+	{
+		send_item1["status"] = "success";
+		send_item1["reason"] = "";
+	}
+	else
+	{
+		send_item1["status"] = "fail";
+		send_item1["reason"] = "unset";
+	}
+	send_item1["value"] = channel1_value;
+	send_arrayObj1.append(send_item1);
+
+	if (channel2_value != 0)
+	{
+		send_item2["status"] = "success";
+		send_item2["reason"] = "";
+	}
+	else
+	{
+		send_item2["status"] = "fail";
+		send_item2["reason"] = "unset";
+	}
+	send_item2["value"] = channel2_value;
+	send_arrayObj2.append(send_item2);
+
+	send_item3["channel1"] = send_arrayObj1;
+	send_item3["channel2"] = send_arrayObj2;
+	send_arrayObj3.append(send_item3);
+
+
+	send_root["identifier"] = "2017010915420322";
+	send_root["type"] = "Reply";
+	send_root["name"] = "Listening";
+	send_root["param"] = send_arrayObj3;
+
+	send_root.toStyledString();//build json data
+
+	std::string SendBuf = style_write.write(send_root);
+
+	SendDataToTheThirdParty(SendBuf);
+
 	TRACE(_T("Send ConfigReply\n"));
+
 
 }
 void JProtocol::QueryReply()

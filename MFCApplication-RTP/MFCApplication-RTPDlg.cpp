@@ -58,9 +58,9 @@ CMFCApplicationRTPDlg::CMFCApplicationRTPDlg(CWnd* pParent /*=NULL*/)
 	//WSAStartup(MAKEWORD(2, 2), &dat);//init socket
 
 	pThis = this;
-	channel1RTP = new MyRTP;
+	channel1RTP = NULL;
+	channel2RTP = NULL;
 	mastergate = new JProtocol;
-	//myreceiver = new MyRTPReceiver;
 
 
 }
@@ -69,9 +69,21 @@ CMFCApplicationRTPDlg::~CMFCApplicationRTPDlg()
 {
 	//WSACleanup();
 
-	if (channel1RTP != NULL)delete channel1RTP;
-	if (mastergate != NULL)delete mastergate;
-
+	if (channel1RTP != NULL)
+	{
+		delete channel1RTP;
+		channel1RTP = NULL;
+	}
+	if (channel2RTP != NULL)
+	{
+		delete channel2RTP;
+		channel2RTP = NULL;
+	}
+	if (mastergate != NULL)
+	{
+		delete mastergate;
+		mastergate = NULL;
+	}
 
 }
 
@@ -182,7 +194,7 @@ void CMFCApplicationRTPDlg::OnBnClickedButton1()
 	CWnd *pWnd1 = GetDlgItem(IDC_BUTTON1);
 	pWnd1->EnableWindow(FALSE);
 
-	channel1RTP->Rtp_Init(55500, 57400, 1973);
+	//channel1RTP->Rtp_Init(55500, 57400, 1973);
 	//uint8_t silencebuffer[320];
 	//for (int i = 0; i < 320; i++)
 	//	silencebuffer[i] = 128;
@@ -220,11 +232,37 @@ void CMFCApplicationRTPDlg::MasterOnDataFunc(int command, ResponeData data)
 	{
 	case CONNECT:
 			mastergate->ConnectReply("success", "fine!");
+			if (1)/*PTT Notice Enable*/
+			{
+
+			}
 		break;
 
 
 	case LISTENING:
-			mastergate->ConfigReply();
+			if (data.channel1_id != 0)
+			{
+				if (channel1RTP == NULL){
+					channel1RTP = new MyRTP;
+					channel1RTP->Rtp_Init(55500, 57400, 1973);//ÊÇ·ñÒþÊ½ÉèÖÃ£¿
+				}
+				TRACE(("set channel1 is:%d\n"), data.channel1_id);
+	
+			}
+
+			if (data.channel2_id !=0)
+			{
+				if (channel2RTP == NULL){
+					channel2RTP = new MyRTP;
+					channel2RTP->Rtp_Init(55400, 57300, 2017);
+				}
+				TRACE(("set channel2 is:%d\n"), data.channel2_id);
+			}
+			if (data.channel1_id == 0 && data.channel2_id == 0)
+			{
+				TRACE(_T("No channel is set\n"));
+			}
+			mastergate->ConfigReply(data.channel1_id, data.channel2_id);
 		break;
 
 	case QUERY:

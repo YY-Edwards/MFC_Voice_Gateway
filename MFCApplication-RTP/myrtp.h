@@ -32,10 +32,25 @@ public:
 		
 		MyRTP();
 		~MyRTP();
-
+		/*
+		RTP通道基本配置：
+			portbase：本地端口，
+			destport：目标端口，
+			ssrc:预定义的语音数据标识
+		*/
 		void Rtp_Init(uint16_t portbase, uint16_t destport, uint32_t ssrc);
+
+		/*
+		RTP通道高级配置：
+		*/
 		void Set_ParamsForSender();
+
+		/*
+		RTP通道发送数据：
+		*/
 		void SendRTPPayloadData(uint8_t* buff, uint32_t buff_length);
+
+
 		uint8_t *GetRTPPayloadData();
 		uint32_t GetRTPPayloadDataLength();
 		uint32_t GetRTPSSRC();
