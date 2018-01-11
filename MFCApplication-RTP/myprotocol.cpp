@@ -78,21 +78,24 @@ void JProtocol::InitProtocolData()
 	statemap.insert(std::pair<string, int>("CallEND", CALLEND));
 
 	//init default protocol data
-	thePROTOCOL_Ctrlr.identifier = "";
 	thePROTOCOL_Ctrlr.MASTER_State = CONNECT;
-	thePROTOCOL_Ctrlr.type = "Request";
-	thePROTOCOL_Ctrlr.name = "Connect";
+	thePROTOCOL_Ctrlr.PROTOCOL_Fixed_Header.identifier = "";
+	thePROTOCOL_Ctrlr.PROTOCOL_Fixed_Header.type = "Request";
+	thePROTOCOL_Ctrlr.PROTOCOL_Fixed_Header.name = "Connect";
 	thePROTOCOL_Ctrlr.PROTOCOL_params.key = "";
 	thePROTOCOL_Ctrlr.PROTOCOL_params.status = "fail";
 	thePROTOCOL_Ctrlr.PROTOCOL_params.reason = "";
-	thePROTOCOL_Ctrlr.PROTOCOL_params.Listening_channles.channel1_value = 0;
-	thePROTOCOL_Ctrlr.PROTOCOL_params.Listening_channles.channel2_value = 0;
-	thePROTOCOL_Ctrlr.PROTOCOL_params.Channel1_Param.reason = "timeout";
-	thePROTOCOL_Ctrlr.PROTOCOL_params.Channel1_Param.status = "fail";
-	thePROTOCOL_Ctrlr.PROTOCOL_params.Channel1_Param.channel_value = 0;
-	thePROTOCOL_Ctrlr.PROTOCOL_params.Channel2_Param.reason = "";
-	thePROTOCOL_Ctrlr.PROTOCOL_params.Channel2_Param.status = "fail";
-	thePROTOCOL_Ctrlr.PROTOCOL_params.Channel2_Param.channel_value = 0;
+	thePROTOCOL_Ctrlr.PROTOCOL_params.Listening_Channels_Group.channel1_group_id = 0;
+	thePROTOCOL_Ctrlr.PROTOCOL_params.Listening_Channels_Group.channel2_group_id = 0;
+
+
+	thePROTOCOL_Ctrlr.PROTOCOL_params.Listening_Params_Channels_Params.channel1.reason = "timeout";
+	thePROTOCOL_Ctrlr.PROTOCOL_params.Listening_Params_Channels_Params.channel1.status = "fail";
+	thePROTOCOL_Ctrlr.PROTOCOL_params.Listening_Params_Channels_Params.channel1.listening_group_id = 0;
+	thePROTOCOL_Ctrlr.PROTOCOL_params.Listening_Params_Channels_Params.channel2.reason = "timeout";
+	thePROTOCOL_Ctrlr.PROTOCOL_params.Listening_Params_Channels_Params.channel2.status = "fail";
+	thePROTOCOL_Ctrlr.PROTOCOL_params.Listening_Params_Channels_Params.channel2.listening_group_id = 0;
+
 	thePROTOCOL_Ctrlr.PROTOCOL_params.src = 9;
 	thePROTOCOL_Ctrlr.PROTOCOL_params.dst = 65536;
 	thePROTOCOL_Ctrlr.PROTOCOL_params.channel = "";
@@ -201,7 +204,7 @@ void JProtocol::CreatProtocolParseThread()
 void JProtocol::DataProcessFunc()
 {
 
-	switch (statemap.find(thePROTOCOL_Ctrlr.name)->second)
+	switch (statemap.find(thePROTOCOL_Ctrlr.PROTOCOL_Fixed_Header.name)->second)
 	{
 	case CONNECT:
 			TRACE(_T("the ThirdParty Request Connect\n"));
@@ -231,13 +234,14 @@ void JProtocol::DataProcessFunc()
 
 	if (RequestCallBackFunc != NULL)
 	{
-		ResponeData r = { thePROTOCOL_Ctrlr.identifier, thePROTOCOL_Ctrlr.PROTOCOL_params.key,
-		thePROTOCOL_Ctrlr.PROTOCOL_params.channel, thePROTOCOL_Ctrlr.PROTOCOL_params.Channel1_Param.channel_value,
-		thePROTOCOL_Ctrlr.PROTOCOL_params.Channel2_Param.channel_value,
+
+		ResponeData r = { thePROTOCOL_Ctrlr.PROTOCOL_Fixed_Header.identifier, thePROTOCOL_Ctrlr.PROTOCOL_params.key,
+		thePROTOCOL_Ctrlr.PROTOCOL_params.channel, thePROTOCOL_Ctrlr.PROTOCOL_params.Listening_Channels_Group.channel1_group_id,
+		thePROTOCOL_Ctrlr.PROTOCOL_params.Listening_Channels_Group.channel2_group_id,
 		thePROTOCOL_Ctrlr.PROTOCOL_params.src, thePROTOCOL_Ctrlr.PROTOCOL_params.dst,
 		"", "" };
 
-		onData(RequestCallBackFunc, statemap.find(thePROTOCOL_Ctrlr.name)->second, r);//callback (*func)
+		onData(RequestCallBackFunc, statemap.find(thePROTOCOL_Ctrlr.PROTOCOL_Fixed_Header.name)->second, r);//callback (*func)
 	}
 
 
@@ -273,26 +277,27 @@ int JProtocol::ProtocolParseThreadFunc()
 		{
 			if (reader.parse(queue_data, val))//Parse JSON buff
 			{
-				thePROTOCOL_Ctrlr.identifier = val["identifier"].asString();
-				thePROTOCOL_Ctrlr.type = val["type"].asString();
-				thePROTOCOL_Ctrlr.name = val["name"].asString();
+				thePROTOCOL_Ctrlr.PROTOCOL_Fixed_Header.identifier = val["identifier"].asString();
+				thePROTOCOL_Ctrlr.PROTOCOL_Fixed_Header.type = val["type"].asString();
+				thePROTOCOL_Ctrlr.PROTOCOL_Fixed_Header.name = val["name"].asString();
 
-				if (thePROTOCOL_Ctrlr.name == "Connect")
+				if (thePROTOCOL_Ctrlr.PROTOCOL_Fixed_Header.name == "Connect")
 					thePROTOCOL_Ctrlr.PROTOCOL_params.key = val["key"].asString();
-				else if (thePROTOCOL_Ctrlr.name == "Listening")
+				else if (thePROTOCOL_Ctrlr.PROTOCOL_Fixed_Header.name == "Listening")
 				{
-					thePROTOCOL_Ctrlr.PROTOCOL_params.Listening_channles.channel1_value = val["param"]["listening"]["channel1"].asInt();
-					thePROTOCOL_Ctrlr.PROTOCOL_params.Channel1_Param.channel_value = thePROTOCOL_Ctrlr.PROTOCOL_params.Listening_channles.channel1_value;
-					thePROTOCOL_Ctrlr.PROTOCOL_params.Listening_channles.channel2_value = val["param"]["listening"]["channel2"].asInt();
-					thePROTOCOL_Ctrlr.PROTOCOL_params.Channel2_Param.channel_value = thePROTOCOL_Ctrlr.PROTOCOL_params.Listening_channles.channel2_value;
+					thePROTOCOL_Ctrlr.PROTOCOL_params.Listening_Channels_Group.channel1_group_id = val["param"]["listening"]["channel1"].asInt();
+					thePROTOCOL_Ctrlr.PROTOCOL_params.Listening_Params_Channels_Params.channel1.listening_group_id = thePROTOCOL_Ctrlr.PROTOCOL_params.Listening_Channels_Group.channel1_group_id;
+					
+					thePROTOCOL_Ctrlr.PROTOCOL_params.Listening_Channels_Group.channel2_group_id = val["param"]["listening"]["channel2"].asInt();
+					thePROTOCOL_Ctrlr.PROTOCOL_params.Listening_Params_Channels_Params.channel2.listening_group_id = thePROTOCOL_Ctrlr.PROTOCOL_params.Listening_Channels_Group.channel2_group_id;
 
 				}
-				else if (thePROTOCOL_Ctrlr.name == "Query")
+				else if (thePROTOCOL_Ctrlr.PROTOCOL_Fixed_Header.name == "Query")
 				{
 					//no param data
 				}
-				else if ((thePROTOCOL_Ctrlr.name == "CallRequest") || (thePROTOCOL_Ctrlr.name == "CallRelease")
-					|| (thePROTOCOL_Ctrlr.name == "CallStart") || (thePROTOCOL_Ctrlr.name == "CallEnd"))
+				else if ((thePROTOCOL_Ctrlr.PROTOCOL_Fixed_Header.name == "CallRequest") || (thePROTOCOL_Ctrlr.PROTOCOL_Fixed_Header.name == "CallRelease")
+					|| (thePROTOCOL_Ctrlr.PROTOCOL_Fixed_Header.name == "CallStart") || (thePROTOCOL_Ctrlr.PROTOCOL_Fixed_Header.name == "CallEnd"))
 				{
 					thePROTOCOL_Ctrlr.PROTOCOL_params.src = val["param"]["src"].asInt();
 					thePROTOCOL_Ctrlr.PROTOCOL_params.dst = val["param"]["dst"].asInt();
@@ -305,7 +310,7 @@ int JProtocol::ProtocolParseThreadFunc()
 
 				}
 
-				if (thePROTOCOL_Ctrlr.type == "Request")
+				if (thePROTOCOL_Ctrlr.PROTOCOL_Fixed_Header.type == "Request")
 					DataProcessFunc();//process thePROTOCOL_Ctrlr data
 			}
 			else
@@ -677,13 +682,55 @@ void JProtocol::ConfigReply(int channel1_value, int channel2_value)
 
 
 }
-void JProtocol::QueryReply()
+void JProtocol::QueryReply(int channel1_value, int channel2_value)
 {
+	Json::Value send_root;
+	Json::Value send_arrayObj1;
+	Json::Value send_arrayObj2;
+	Json::Value send_item1;
+	Json::Value send_item2;
+	Json::StyledWriter style_write;
+
+
+	send_item2["channel1"] = channel1_value;
+	send_item2["channel2"] = channel2_value;
+	send_arrayObj2.append(send_item2);
+	send_item1["listening"] = send_arrayObj2;
+	if ((channel1_value != 0) && (channel2_value != 0))
+	{
+		send_item1["status"] = "success";
+		send_item1["reason"] = "";
+	}
+	else
+	{
+		send_item1["status"] = "fail";
+		if (channel1_value ==0 && channel2_value ==0)
+			send_item1["reason"] = "channel1,2 is unset";
+		else if (channel1_value == 0 && channel2_value != 0)
+			send_item1["reason"] = "channel1 is unset";
+		else
+			send_item1["reason"] = "channel2 is unset";
+	}
+
+	send_arrayObj1.append(send_item1);
+
+	send_root["identifier"] = "2017010915420322";
+	send_root["type"] = "Reply";
+	send_root["name"] = "Query";
+
+	send_root["param"] = send_arrayObj1;
+
+	send_root.toStyledString();//build json data
+
+	std::string SendBuf = style_write.write(send_root);
+
+	SendDataToTheThirdParty(SendBuf);
 	TRACE(_T("Send QueryReply\n"));
 
 }
-void JProtocol::CallRequestReply()
+void JProtocol::CallRequestReply(uint32_t src, uint32_t dst, std::string channel)
 {
+	
 	TRACE(_T("Send CallRequestReply\n"));
 
 }

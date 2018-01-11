@@ -240,42 +240,42 @@ void CMFCApplicationRTPDlg::MasterOnDataFunc(int command, ResponeData data)
 
 
 	case LISTENING:
-			if (data.channel1_id != 0)
+			if (data.channel1_group_id != 0)
 			{
 				if (channel1RTP == NULL){
 					channel1RTP = new MyRTP;
 					channel1RTP->Rtp_Init(55500, 57400, 1973);//ÊÇ·ñÒþÊ½ÉèÖÃ£¿
 				}
-				TRACE(("set channel1 is:%d\n"), data.channel1_id);
+				TRACE(("set channel1 is:%d\n"), data.channel1_group_id);
 	
 			}
 
-			if (data.channel2_id !=0)
+			if (data.channel2_group_id != 0)
 			{
 				if (channel2RTP == NULL){
 					channel2RTP = new MyRTP;
 					channel2RTP->Rtp_Init(55400, 57300, 2017);
 				}
-				TRACE(("set channel2 is:%d\n"), data.channel2_id);
+				TRACE(("set channel2 is:%d\n"), data.channel2_group_id);
 			}
-			if (data.channel1_id == 0 && data.channel2_id == 0)
+			if (data.channel1_group_id == 0 && data.channel2_group_id == 0)
 			{
 				TRACE(_T("No channel is set\n"));
 			}
-			mastergate->ConfigReply(data.channel1_id, data.channel2_id);
+			mastergate->ConfigReply(data.channel1_group_id, data.channel2_group_id);
 		break;
 
 	case QUERY:
-			mastergate->QueryReply();
+			mastergate->QueryReply(data.channel1_group_id, data.channel2_group_id);
 		break;
 
 
 	case CALLREQUEST:
-			mastergate->CallRequestReply();
+			mastergate->CallRequestReply(data.src_id, data.dst_id, data.channel_id);
 		break;
 
 	case CALLRELEASE:
-			mastergate->CallRequestReply();
+			mastergate->CallReleaseReply();
 		break;
 	default:
 

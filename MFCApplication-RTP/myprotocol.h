@@ -32,13 +32,15 @@ public:
 	void SetCallBackFunc(void(*callBackFunc)(int, ResponeData));
 
 	/*
-	连接回复
+	连接回复:
 	*/
 	void ConnectReply(std::string status, std::string reason="");
 
 	/*
 	配置回复
 	*/
+
+
 	
 	void ConfigReply(int channel1_value, int channel2_value);
 
@@ -46,12 +48,12 @@ public:
 	查询回复
 	*/
 
-	void QueryReply();
+	void QueryReply(int channel1_value, int channel2_value);
 
 	/*
 	请求发起组呼回复
 	*/
-	void CallRequestReply();
+	void CallRequestReply(uint32_t src, uint32_t dst, std::string channel );
 
 	/*
 	结束组呼回复

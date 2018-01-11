@@ -25,6 +25,7 @@ using namespace std;
 #define						PROTOCOL_LENGTH							4
 
 #pragma pack(1)
+
 struct ResponeData
 {
 	std::string identifier;
@@ -33,8 +34,8 @@ struct ResponeData
 	std::string key;
 
 	std::string channel_id;
-	int16_t channel1_id;
-	int16_t channel2_id;
+	int16_t channel1_group_id;
+	int16_t channel2_group_id;
 
 	int32_t src_id;
 	int32_t dst_id;
@@ -43,7 +44,6 @@ struct ResponeData
 	std::string  reason;
 
 };
-#pragma pack()
 
 
 //PROTOCOL State Master.
@@ -75,27 +75,139 @@ typedef enum {
 } PROTOCOL_Names;
 
 
-//param->listening->Listening_channles
-
+/*connect struct*/
+//request
 typedef struct{
 
-	uint32_t channel1_value;
-	uint32_t channel2_value;
+	std::string key;
 
-}Listening_Channels;
-
-
-#pragma pack(1)
+}Connect_Request_Params_t;
+//reply
 typedef struct{
+
 	std::string status;
 	std::string reason;
-	uint32_t channel_value;
 
-}Channel_Params;
-#pragma pack()
+}Connect_Reply_Params_t;
+
+
+/*listening struct*/
+//request
+typedef struct{
+
+	uint32_t channel1_group_id;
+	uint32_t channel2_group_id;
+
+}Listening_Channels_Groups_t;
+typedef struct{
+
+	Listening_Channels_Groups_t Listening_Channels_Group;
+
+}Listening_Request_Params_t;
+
+//reply
+typedef struct{
+
+	std::string status;
+	std::string reason;
+	uint32_t listening_group_id;
+
+}Listening_Reply_Params_Channels_Params_t;
+
+typedef struct{
+
+	Listening_Reply_Params_Channels_Params_t channel1;
+	Listening_Reply_Params_Channels_Params_t channel2;
+
+}Listening_Reply_Params_Channels_t;
+
+typedef struct{
+
+	Listening_Reply_Params_Channels_t Listening_Reply_Params_Channels;
+}Listening_Reply_Params_t;
+
+
+
+/*query struct*/
+//reply
+typedef struct{
+
+	std::string status;
+	std::string reason;
+	Listening_Channels_Groups_t Listening_Channels_Groups;
+
+}Query_Request_Params_t;
+
+
+/*callrequest struct*/
+//request
+typedef struct{
+
+	uint32_t src;
+	uint32_t dst;
+	std::string channel_id;
+
+}CallRequest_Request_Params_t;
+//reply
+typedef struct{
+
+	std::string status;
+	std::string reason;
+
+}CallRequest_Reply_Params_t;
+
+/*callrelease struct*/
+//request
+typedef struct{
+
+	uint32_t src;
+	uint32_t dst;
+	std::string channel_id;
+
+}CallRelease_Request_Params_t;
+
+//reply
+typedef struct{
+
+	std::string status;
+	std::string reason;
+
+}CallRelease_Reply_Params_t;
+
+
+
+/*callstart struct*/
+//Notify
+typedef struct{
+
+	uint32_t src;
+	uint32_t dst;
+	std::string channel_id;
+
+}CallStart_Notify_Params_t;
+
+
+
+/*callend struct*/
+//Notify
+typedef struct{
+
+	uint32_t src;
+	uint32_t dst;
+	std::string channel_id;
+
+}CallEnd_Notify_Params_t;
+
+
+
+typedef struct{
+
+	Listening_Reply_Params_Channels_Params_t channel1;
+	Listening_Reply_Params_Channels_Params_t channel2;
+
+}Listening_Params_Channels_Params_t;
 
 //PROTOCOL Params(All.)
-#pragma pack(1)
 typedef struct{
 
 	std::string key;
@@ -104,21 +216,28 @@ typedef struct{
 	uint32_t src;
 	uint32_t dst;
 	std::string channel; 
-	Listening_Channels Listening_channles;
-	Channel_Params Channel1_Param;
-	Channel_Params Channel2_Param;
+	Listening_Channels_Groups_t Listening_Channels_Group;
+	//Listening_Channels Listening_channles;
+	Listening_Params_Channels_Params_t Listening_Params_Channels_Params;
+	//Channel_Params Channel1_Param;
+	//Channel_Params Channel2_Param;
 
 }PROTOCOL_Params;
-#pragma pack()
 
-#pragma pack(1)
+
+typedef struct{
+
+	std::string identifier;
+	std::string type;
+	std::string name;
+
+}PROTOCOL_Fixed_Header_t;
+
 typedef struct{
 
 	PROTOCOL_Names MASTER_State;
 	//MASTER_States MASTER_State;
-	std::string identifier;
-	std::string type;
-	std::string name;
+	PROTOCOL_Fixed_Header_t PROTOCOL_Fixed_Header;
 	//PROTOCOL_Types PROTOCOL_Type;
 	//PROTOCOL_Names PROTOCOL_Name;
 	PROTOCOL_Params PROTOCOL_params;

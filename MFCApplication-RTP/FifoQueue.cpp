@@ -50,9 +50,9 @@ bool FifoQueue::PushToQueue(void *packet, int len)
 	int err = 0;
 	static int counter = 0;
 
-	memcpy_s(&fifobuff[fifo_counter][0], len, packet, len);
 	//WaitForSingleObject(m_hLocker, INFINITE);//等待互斥句柄触发
 	EnterCriticalSection(&cs);
+	memcpy_s(&fifobuff[fifo_counter][0], len, packet, len);
 	//m_queue.push(&fifobuff[fifo_counter][0]);
 	m_list.push_back(&fifobuff[fifo_counter][0]);//将一个数据包地址插入链表尾
 	fifo_counter++;
