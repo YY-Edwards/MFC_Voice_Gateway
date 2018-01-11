@@ -244,7 +244,7 @@ void CMFCApplicationRTPDlg::MasterOnDataFunc(int command, ResponeData data)
 			{
 				if (channel1RTP == NULL){
 					channel1RTP = new MyRTP;
-					channel1RTP->Rtp_Init(55500, 57400, 1973);//是否隐式设置？
+					channel1RTP->Rtp_Init(CHANNEL1RTPBASEPORT, CHANNEL1RTPDESTPORT, CHANNEL1RTPSSRC);//是否隐式设置？
 				}
 				TRACE(("set channel1 is:%d\n"), data.channel1_group_id);
 	
@@ -254,7 +254,7 @@ void CMFCApplicationRTPDlg::MasterOnDataFunc(int command, ResponeData data)
 			{
 				if (channel2RTP == NULL){
 					channel2RTP = new MyRTP;
-					channel2RTP->Rtp_Init(55400, 57300, 2017);
+					channel2RTP->Rtp_Init(CHANNEL2RTPBASEPORT, CHANNEL2RTPDESTPORT, CHANNEL2RTPSSRC);
 				}
 				TRACE(("set channel2 is:%d\n"), data.channel2_group_id);
 			}

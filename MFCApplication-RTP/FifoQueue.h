@@ -15,6 +15,7 @@
 #include <queue>
 #include <stdint.h>
 #include <process.h>
+#include "Common.h"
 
 class FifoQueue 
 {

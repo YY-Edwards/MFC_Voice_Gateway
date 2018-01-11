@@ -385,7 +385,9 @@ int JProtocol::ProcessClient(SOCKET clientfd)
 	int recv_length = 0;
 	static int32_t bytes_remained = 0;
 	static uint32_t count = 0;
-	static uint32_t pro_length = 0;
+	static int32_t pro_length = 0;
+	std::string len_str;
+	len_str.clear();
 
 	//currentclientsoc = clientsoc;
 	//设置RECV超时
@@ -404,12 +406,13 @@ int JProtocol::ProcessClient(SOCKET clientfd)
 
 		Start:
 
-			//if ((recvbuf[0] == 0x31) && (recv_length >= 5) && (bytes_remained == 0))
 			if ((recvbuf[0] == PROTOCOL_HEAD) && (recv_length >= 5) && (bytes_remained == 0))//protocol start
 			{
+					memcpy((void*)len_str.c_str(), &recvbuf[1], 4);
+					sscanf_s(len_str.c_str(), "%D", &pro_length);//string->int
 
-					pro_length = (recvbuf[1] - 0x30) * 1000 + (recvbuf[2] - 0x30) * 100
-						+ (recvbuf[3] - 0x30) * 10 + (recvbuf[4] - 0x30);
+					/*pro_length = (recvbuf[1] - 0x30) * 1000 + (recvbuf[2] - 0x30) * 100
+						+ (recvbuf[3] - 0x30) * 10 + (recvbuf[4] - 0x30);*/
 
 					if (recvbuf[5] != '{')
 					{
@@ -533,32 +536,33 @@ int JProtocol::SendDataToTheThirdParty(std::string buff)
 	int copy_len = -1;
 	int count = 0;
 	int return_value = 0;
-	char send_buff[1024];
-	char len_buff[4];
 	int pro_len = 0;
-	int temp_s = 0;
-	int temp_r = 0;
-	memset(len_buff, 0x00, 4);
-	memset(send_buff, 0x00, 1024);
+	int send_len = 0;
 
-	temp_s = buff.size() / 1000;
-	temp_r = buff.size() % 1000;
-	len_buff[0] = temp_s + 0x30;//千位
+	stringstream ss;
+	ss<< buff.size();
 
-	temp_s = temp_r / 100;
-	temp_r = temp_r % 100;
-	len_buff[1] = temp_s + 0x30;//百位
+	phy_fragment_t phy_fragment;
+	memset(phy_fragment.fragment_element, 0x00, sizeof(phy_fragment));
 
-	temp_s = temp_r / 10;
-	temp_r = temp_r % 10;
-	len_buff[2] = temp_s + 0x30;//十位
-	len_buff[3] = temp_r + 0x30;//个位
+	phy_fragment.transport_protocol_fragment.head = PROTOCOL_HEAD;
 
-	//build protocol data
-	send_buff[0] = PROTOCOL_HEAD;
-	memcpy_s(&send_buff[1], 4, len_buff, 4);
-	memcpy_s(&send_buff[5], buff.size(), buff.c_str(), buff.size());
-	pro_len = 5 + buff.size();
+	if (buff.size() < 1000)
+	{
+		phy_fragment.transport_protocol_fragment.payload_len[0] = '0';
+		memcpy(&(phy_fragment.transport_protocol_fragment.payload_len[1]), ss.str().c_str(), 3);
+		//sprintf_s如下操作即可
+		//sprintf_s(&(phy_fragment.transport_protocol_fragment.payload_len[1]), 10,  "%d", buff.size());
+	}
+	else
+	{
+		memcpy(&(phy_fragment.transport_protocol_fragment.payload_len[0]), ss.str().c_str(), 4);
+		//sprintf_s(&(phy_fragment.transport_protocol_fragment.payload_len[0]), 10,  "%d", buff.size());
+
+	}
+	
+	memcpy(phy_fragment.transport_protocol_fragment.json_payload, buff.c_str(), buff.size());
+	send_len = strlen(phy_fragment.fragment_element);
 
 	if (!clientmap.empty())
 	{
@@ -569,7 +573,8 @@ int JProtocol::SendDataToTheThirdParty(std::string buff)
 
 		do
 		{
-			copy_len = send(Objsoc, &send_buff[count], (pro_len-count), 0);
+			//copy_len = send(Objsoc, &send_buff[count], (pro_len-count), 0);
+			copy_len = send(Objsoc, &phy_fragment.fragment_element[count], (send_len - count), 0);
 			if (copy_len < 0)
 			{
 				count = -1;
@@ -582,7 +587,7 @@ int JProtocol::SendDataToTheThirdParty(std::string buff)
 				TRACE(("send length is %d\n"), copy_len);
 			}
 
-		} while ((pro_len-count) != 0);
+		} while ((send_len - count) != 0);
 
 	}
 	else
@@ -606,7 +611,7 @@ void JProtocol::ConnectReply(std::string status, std::string reason)
 	send_item["reason"] = reason;
 	send_arrayObj.append(send_item);
 
-	send_root["identifier"] = "2017010915420322";
+	send_root["identifier"] = CreateGuid();//"2017010915420322";
 	send_root["type"] = "Reply";
 	send_root["name"] = "Connect";
 
@@ -747,5 +752,22 @@ void JProtocol::CallStartNotify()
 void JProtocol::CallEndNotify()
 {
 	TRACE(_T("Send CallEndNotify\n"));
+
+}
+
+std::string JProtocol::CreateGuid()
+{
+	std::string strGuid = "", strValue;
+	srand((unsigned)time(NULL)); /*播种子*/
+	for (int i = 0; i < 32; i++)
+	{
+		float Num = rand() % 16;
+		int nValue = floor(Num);
+		//sprintf_s(&(phy_fragment.transport_protocol_fragment.payload_len[1]), 10,  "%d", buff.size());
+		GOSPRINTF((char *)strValue.c_str(), 2, "%0x", nValue);
+		strGuid.insert(i, strValue.c_str());
+	}
+	return strGuid;
+	
 
 }

@@ -7,8 +7,11 @@
 #include <string>
 #include <stdbool.h>
 #include <stdint.h>
+#include <sstream>
 using namespace std;
 
+#define                     WIN_RUNNING_PLATFORM 
+//#define                     LINUX_RUNNING_PLATFORM 
 
 #define						CHANNEL1RTPBASEPORT						55500
 #define						CHANNEL1RTPDESTPORT						57400
@@ -24,8 +27,14 @@ using namespace std;
 #define						PROTOCOL_HEAD							0x01
 #define						PROTOCOL_LENGTH							4
 
-#pragma pack(1)
+#ifdef WIN_RUNNING_PLATFORM
+#define GOSPRINTF(x, y, z, m)  sprintf_s((x), (y), (z), (m));
+#else
+#define GOSPRINTF(x, y, z, m)  sprintf((x), (y), (z), (m));
+#endif
 
+
+#pragma pack(1)
 struct ResponeData
 {
 	std::string identifier;
@@ -243,6 +252,34 @@ typedef struct{
 	PROTOCOL_Params PROTOCOL_params;
 		 
 }PROTOCOL_Ctrlr;
+
+
+
+//typedef union
+//{
+//	json_content_connect_req_t json_content_connect_req;
+//	json_content_connect_reply_t json_content_connect_reply;
+//
+//}json_payload_t;
+
+
+typedef struct{
+
+	char head;
+	char payload_len[4];
+	char json_payload[1019];
+
+}transport_protocol_t;
+
+
+typedef union 
+{
+	transport_protocol_t transport_protocol_fragment;
+	char fragment_element[1024];
+
+}phy_fragment_t;
+
+
 #pragma pack()
 
 /**

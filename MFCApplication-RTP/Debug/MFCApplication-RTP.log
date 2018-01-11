@@ -1,19 +1,10 @@
-﻿生成启动时间为 2018/1/11 10:31:13。
-     1>项目“F:\VS2013\C++\RTP_MatserVoice\MFCApplication-RTP\MFCApplication-RTP\MFCApplication-RTP.vcxproj”在节点 2 上(Rebuild 个目标)。
+﻿生成启动时间为 2018/1/11 16:00:51。
+     1>项目“F:\VS2013\C++\RTP_MatserVoice\MFCApplication-RTP\MFCApplication-RTP\MFCApplication-RTP.vcxproj”在节点 2 上(Build 个目标)。
      1>ClCompile:
-         E:\Program x86C\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I"F:\VS2013\C++\RTP_MatserVoice\MFCApplication-RTP\MFCApplication-RTP" /I"C:\Program Files (x86)\jrtplib\include\jrtplib3" /I"F:\VS2013\C++\RTP_MatserVoice\MFCApplication-RTP\MFCApplication-RTP\include\json" /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D WIN32 /D _WINDOWS /D _DEBUG /D _UNICODE /D UNICODE /D _AFXDLL /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Yc"stdafx.h" /Fp"Debug\MFCApplication-RTP.pch" /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt stdafx.cpp
-         stdafx.cpp
-         E:\Program x86C\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I"F:\VS2013\C++\RTP_MatserVoice\MFCApplication-RTP\MFCApplication-RTP" /I"C:\Program Files (x86)\jrtplib\include\jrtplib3" /I"F:\VS2013\C++\RTP_MatserVoice\MFCApplication-RTP\MFCApplication-RTP\include\json" /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D WIN32 /D _WINDOWS /D _DEBUG /D _UNICODE /D UNICODE /D _AFXDLL /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt FifoQueue.cpp myrtp.cpp
-         myrtp.cpp
-         FifoQueue.cpp
-         正在生成代码...
-         E:\Program x86C\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I"F:\VS2013\C++\RTP_MatserVoice\MFCApplication-RTP\MFCApplication-RTP" /I"C:\Program Files (x86)\jrtplib\include\jrtplib3" /I"F:\VS2013\C++\RTP_MatserVoice\MFCApplication-RTP\MFCApplication-RTP\include\json" /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D WIN32 /D _WINDOWS /D _DEBUG /D _UNICODE /D UNICODE /D _AFXDLL /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Yu"stdafx.h" /Fp"Debug\MFCApplication-RTP.pch" /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt "MFCApplication-RTP.cpp" "MFCApplication-RTPDlg.cpp" myprotocol.cpp
+         E:\Program x86C\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I"F:\VS2013\C++\RTP_MatserVoice\MFCApplication-RTP\MFCApplication-RTP" /I"C:\Program Files (x86)\jrtplib\include\jrtplib3" /I"F:\VS2013\C++\RTP_MatserVoice\MFCApplication-RTP\MFCApplication-RTP\include\json" /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D WIN32 /D _WINDOWS /D _DEBUG /D _UNICODE /D UNICODE /D _AFXDLL /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Yu"stdafx.h" /Fp"Debug\MFCApplication-RTP.pch" /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt myprotocol.cpp
          myprotocol.cpp
-         MFCApplication-RTPDlg.cpp
-         MFCApplication-RTP.cpp
-         正在生成代码...
-       ResourceCompile:
-         C:\Program Files (x86)\Windows Kits\8.1\bin\x86\rc.exe /D _DEBUG /D _UNICODE /D UNICODE /D _AFXDLL /l"0x0804" /IDebug\ /nologo /fo"Debug\MFCApplication-RTP.res" MFCApplication-RTP.rc 
+     1>f:\vs2013\c++\rtp_matservoice\mfcapplication-rtp\mfcapplication-rtp\myprotocol.cpp(764): warning C4244: “初始化”: 从“int”转换到“float”，可能丢失数据
+     1>f:\vs2013\c++\rtp_matservoice\mfcapplication-rtp\mfcapplication-rtp\myprotocol.cpp(765): warning C4244: “初始化”: 从“float”转换到“int”，可能丢失数据
        Link:
          E:\Program x86C\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"F:\VS2013\C++\RTP_MatserVoice\MFCApplication-RTP\Debug\MFCApplication-RTP.exe" /INCREMENTAL /NOLOGO /LIBPATH:"F:\VS2013\C++\RTP_MatserVoice\MFCApplication-RTP\MFCApplication-RTP" jrtplib_d.lib lib_json.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /manifestinput:"E:\Program x86C\Microsoft Visual Studio 12.0\VC\Include\Manifest\dpiaware.manifest" /DEBUG /PDB:"F:\VS2013\C++\RTP_MatserVoice\MFCApplication-RTP\Debug\MFCApplication-RTP.pdb" /SUBSYSTEM:WINDOWS /TLBID:1 /ENTRY:"wWinMainCRTStartup" /DYNAMICBASE /NXCOMPAT /IMPLIB:"F:\VS2013\C++\RTP_MatserVoice\MFCApplication-RTP\Debug\MFCApplication-RTP.lib" /MACHINE:X86 "Debug\MFCApplication-RTP.res"
          Debug\FifoQueue.obj
@@ -23,8 +14,8 @@
          Debug\myrtp.obj
          Debug\stdafx.obj
          MFCApplication-RTP.vcxproj -> F:\VS2013\C++\RTP_MatserVoice\MFCApplication-RTP\Debug\MFCApplication-RTP.exe
-     1>已完成生成项目“F:\VS2013\C++\RTP_MatserVoice\MFCApplication-RTP\MFCApplication-RTP\MFCApplication-RTP.vcxproj”(Rebuild 个目标)的操作。
+     1>已完成生成项目“F:\VS2013\C++\RTP_MatserVoice\MFCApplication-RTP\MFCApplication-RTP\MFCApplication-RTP.vcxproj”(Build 个目标)的操作。
 
 生成成功。
 
-已用时间 00:00:14.58
+已用时间 00:00:02.58

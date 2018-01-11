@@ -161,6 +161,7 @@ private:
 	//Json::Value send_item;
 	//Json::StyledWriter style_write;
 
+	std::string CreateGuid();
 
 };
 
