@@ -53,22 +53,22 @@ public:
 	/*
 	请求发起组呼回复
 	*/
-	void CallRequestReply(uint32_t src, uint32_t dst, std::string channel );
+	void CallRequestReply(std::string status, std::string reason);
 
 	/*
 	结束组呼回复
 	*/
-	void CallReleaseReply();
+	void CallReleaseReply(std::string status, std::string reason);
 
 	/*
 	组呼开始通知
 	*/
-	void CallStartNotify();
+	void CallStartNotify(int src, int dst, std::string channel);
 
 	/*
 	组呼结束通知
 	*/
-	void CallEndNotify();
+	void CallEndNotify(int src, int dst, std::string channel);
 
 	/*
 	关闭服务器端

@@ -271,11 +271,11 @@ void CMFCApplicationRTPDlg::MasterOnDataFunc(int command, ResponeData data)
 
 
 	case CALLREQUEST:
-			mastergate->CallRequestReply(data.src_id, data.dst_id, data.channel_id);
+			mastergate->CallRequestReply("fail", "Unconnect");
 		break;
 
 	case CALLRELEASE:
-			mastergate->CallReleaseReply();
+			mastergate->CallReleaseReply("fail", "Unconnect");
 		break;
 	default:
 

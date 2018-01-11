@@ -445,10 +445,12 @@ int JProtocol::ProcessClient(SOCKET clientfd)
 						jqueue.PushToQueue(&recvbuf[5], pro_length);//push to fifo-buff
 
 						memcpy_s(&recvbuf[0], BUFLENGTH, &recvbuf[pro_length+5], recv_length - 5 - pro_length);
+						memset(&recvbuf[recv_length - pro_length - 5], 0x00, BUFLENGTH - (recv_length - pro_length - 5));
+
 
 						recv_length = recv_length - 5 - pro_length;
 						bytes_remained = 0;
-						count = recv_length;
+						count = 0;
 						goto Start;
 
 					}
@@ -478,10 +480,11 @@ int JProtocol::ProcessClient(SOCKET clientfd)
 					TRACE(_T("need  to dismantle the buff-2\n"));
 					jqueue.PushToQueue(&recvbuf[5], pro_length);//push to fifo-buff
 					memcpy_s(&recvbuf[0], BUFLENGTH, &recvbuf[pro_length + 5], (count + recv_length - pro_length - 5));
+					memset(&recvbuf[count + recv_length - pro_length - 5], 0x00, BUFLENGTH - (count + recv_length - pro_length - 5));
 
 					recv_length = count + recv_length - pro_length - 5;
 					bytes_remained = 0;
-					count = recv_length;
+					count = 0;
 					goto Start;
 
 				}
@@ -629,7 +632,6 @@ void JProtocol::ConnectReply(std::string status, std::string reason)
 	TRACE(_T("Send ConnectReply\n"));
 
 }
-
 void JProtocol::ConfigReply(int channel1_value, int channel2_value)
 {
 	Json::Value send_root;
@@ -672,7 +674,7 @@ void JProtocol::ConfigReply(int channel1_value, int channel2_value)
 	send_arrayObj3.append(send_item3);
 
 
-	send_root["identifier"] = "2017010915420322";
+	send_root["identifier"] = CreateGuid();
 	send_root["type"] = "Reply";
 	send_root["name"] = "Listening";
 	send_root["param"] = send_arrayObj3;
@@ -719,7 +721,7 @@ void JProtocol::QueryReply(int channel1_value, int channel2_value)
 
 	send_arrayObj1.append(send_item1);
 
-	send_root["identifier"] = "2017010915420322";
+	send_root["identifier"] = CreateGuid();
 	send_root["type"] = "Reply";
 	send_root["name"] = "Query";
 
@@ -733,24 +735,106 @@ void JProtocol::QueryReply(int channel1_value, int channel2_value)
 	TRACE(_T("Send QueryReply\n"));
 
 }
-void JProtocol::CallRequestReply(uint32_t src, uint32_t dst, std::string channel)
+void JProtocol::CallRequestReply(std::string status, std::string reason)
 {
-	
+	Json::Value send_root;
+	Json::Value send_arrayObj;
+	Json::Value send_item;
+	Json::StyledWriter style_write;
+
+	send_item["status"] = status;
+	send_item["reason"] = reason;
+	send_arrayObj.append(send_item);
+
+	send_root["identifier"] = CreateGuid();//"2017010915420322";
+	send_root["type"] = "Reply";
+	send_root["name"] = "CallRequest";
+
+	send_root["param"] = send_arrayObj;
+
+	send_root.toStyledString();//build json data
+
+	std::string SendBuf = style_write.write(send_root);
+
+	SendDataToTheThirdParty(SendBuf);
 	TRACE(_T("Send CallRequestReply\n"));
 
 }
-void JProtocol::CallReleaseReply()
+void JProtocol::CallReleaseReply(std::string status, std::string reason)
 {
+	Json::Value send_root;
+	Json::Value send_arrayObj;
+	Json::Value send_item;
+	Json::StyledWriter style_write;
+
+	send_item["status"] = status;
+	send_item["reason"] = reason;
+	send_arrayObj.append(send_item);
+
+	send_root["identifier"] = CreateGuid();//"2017010915420322";
+	send_root["type"] = "Reply";
+	send_root["name"] = "CallRelease";
+
+	send_root["param"] = send_arrayObj;
+
+	send_root.toStyledString();//build json data
+
+	std::string SendBuf = style_write.write(send_root);
+
+	SendDataToTheThirdParty(SendBuf);
 	TRACE(_T("Send CallReleaseReply\n"));
 
 }
-void JProtocol::CallStartNotify()
+void JProtocol::CallStartNotify(int src, int dst, std::string channel)
 {
+	Json::Value send_root;
+	Json::Value send_arrayObj;
+	Json::Value send_item;
+	Json::StyledWriter style_write;
+
+	send_item["src"] = src;
+	send_item["dst"] = dst;
+	send_item["channel"] = channel;
+	send_arrayObj.append(send_item);
+
+	send_root["identifier"] = CreateGuid();//"2017010915420322";
+	send_root["type"] = "Noitify";
+	send_root["name"] = "CallStart";
+
+	send_root["param"] = send_arrayObj;
+
+	send_root.toStyledString();//build json data
+
+	std::string SendBuf = style_write.write(send_root);
+
+	SendDataToTheThirdParty(SendBuf);
+
 	TRACE(_T("Send CallStartNotify\n"));
 
 }
-void JProtocol::CallEndNotify()
+void JProtocol::CallEndNotify(int src, int dst, std::string channel)
 {
+	Json::Value send_root;
+	Json::Value send_arrayObj;
+	Json::Value send_item;
+	Json::StyledWriter style_write;
+
+	send_item["src"] = src;
+	send_item["dst"] = dst;
+	send_item["channel"] = channel;
+	send_arrayObj.append(send_item);
+
+	send_root["identifier"] = CreateGuid();//"2017010915420322";
+	send_root["type"] = "Noitify";
+	send_root["name"] = "CallEnd";
+
+	send_root["param"] = send_arrayObj;
+
+	send_root.toStyledString();//build json data
+
+	std::string SendBuf = style_write.write(send_root);
+
+	SendDataToTheThirdParty(SendBuf);
 	TRACE(_T("Send CallEndNotify\n"));
 
 }
@@ -758,12 +842,11 @@ void JProtocol::CallEndNotify()
 std::string JProtocol::CreateGuid()
 {
 	std::string strGuid = "", strValue;
-	srand((unsigned)time(NULL)); /*播种子*/
+	srand((unsigned)clock()); /*播种子*/
 	for (int i = 0; i < 32; i++)
 	{
-		float Num = rand() % 16;
-		int nValue = floor(Num);
-		//sprintf_s(&(phy_fragment.transport_protocol_fragment.payload_len[1]), 10,  "%d", buff.size());
+		float Num = (float)(rand() % 16);
+		int nValue = (int)floor(Num);
 		GOSPRINTF((char *)strValue.c_str(), 2, "%0x", nValue);
 		strGuid.insert(i, strValue.c_str());
 	}
