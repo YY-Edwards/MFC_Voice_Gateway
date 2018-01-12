@@ -98,6 +98,8 @@ BEGIN_MESSAGE_MAP(CMFCApplicationRTPDlg, CDialogEx)
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(IDC_BUTTON1, &CMFCApplicationRTPDlg::OnBnClickedButton1)
 	ON_BN_CLICKED(IDC_BUTTON2, &CMFCApplicationRTPDlg::OnBnClickedButton_TCPInit)
+	ON_BN_CLICKED(IDC_BUTTON3, &CMFCApplicationRTPDlg::OnBnClickedSendStart)
+	ON_BN_CLICKED(IDC_BUTTON4, &CMFCApplicationRTPDlg::OnBnClickedSendEnd)
 END_MESSAGE_MAP()
 
 
@@ -227,11 +229,13 @@ void CMFCApplicationRTPDlg::MasterOnData(int command, ResponeData data)
 }
 void CMFCApplicationRTPDlg::MasterOnDataFunc(int command, ResponeData data)
 {
+	std::string c_status = "success";
+
 	PROTOCOL_Names pro_name = (PROTOCOL_Names)command;
 	switch (pro_name)
 	{
 	case CONNECT:
-			mastergate->ConnectReply("success", "fine!");
+			mastergate->ConnectReply(data.socket_fd, "success", "fine!");
 			if (1)/*PTT Notice Enable*/
 			{
 
@@ -262,20 +266,24 @@ void CMFCApplicationRTPDlg::MasterOnDataFunc(int command, ResponeData data)
 			{
 				TRACE(_T("No channel is set\n"));
 			}
-			mastergate->ConfigReply(data.channel1_group_id, data.channel2_group_id);
+			mastergate->ConfigReply(data.socket_fd, data.channel1_group_id, data.channel2_group_id);
 		break;
 
 	case QUERY:
-			mastergate->QueryReply(data.channel1_group_id, data.channel2_group_id);
+		mastergate->QueryReply(data.socket_fd, data.channel1_group_id, data.channel2_group_id);
 		break;
 
 
 	case CALLREQUEST:
-			mastergate->CallRequestReply("fail", "Unconnect");
+		mastergate->CallRequestReply(data.socket_fd, "fail", "Unconnect");
+		if (c_status == "success")
+			mastergate->CallStartNotify(data.socket_fd, data.src_id, data.dst_id, data.channel_id);
 		break;
 
 	case CALLRELEASE:
-			mastergate->CallReleaseReply("fail", "Unconnect");
+		mastergate->CallReleaseReply(data.socket_fd, "fail", "Unconnect");
+		if (c_status == "success")
+			mastergate->CallEndNotify(data.socket_fd, data.src_id, data.dst_id, data.channel_id);
 		break;
 	default:
 
@@ -300,4 +308,37 @@ void CMFCApplicationRTPDlg::OnBnClickedButton_TCPInit()
 	
 	
 	// TODO:  在此添加控件通知处理程序代码
+}
+
+
+void CMFCApplicationRTPDlg::OnBnClickedSendStart()
+{
+	int src = 0xffff;
+	int dst = 0xabcd;
+	std::string channel = "channel0";
+	// TODO:  在此添加控件通知处理程序代码
+	if (mastergate!= NULL)
+	{
+		if (mastergate->IsMaterInitComplete())mastergate->CallStartNotify(0, src, dst, channel);
+
+	}
+
+
+
+}
+
+
+void CMFCApplicationRTPDlg::OnBnClickedSendEnd()
+{
+	int src = 0xffff;
+	int dst = 0xabcd;
+	std::string channel = "channel0";
+	// TODO:  在此添加控件通知处理程序代码
+
+	if (mastergate != NULL)
+	{
+		if (mastergate->IsMaterInitComplete())mastergate->CallEndNotify(0, src, dst, channel);
+
+	}
+
 }

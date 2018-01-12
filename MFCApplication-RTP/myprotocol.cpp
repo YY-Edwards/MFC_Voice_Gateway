@@ -34,7 +34,10 @@ JProtocol::~JProtocol()
 	statemap.clear();
 	clientmap.clear();
 
+#ifdef WIN_RUNNING_PLATFORM
 	WSACleanup();
+#else
+#endif
 	TRACE(_T("Destory: JProtocol \n"));
 
 
@@ -47,10 +50,12 @@ JProtocol::~JProtocol()
 
 void JProtocol::InitProtocolData()
 {
-	
+#ifdef WIN_RUNNING_PLATFORM
 	WSADATA dat;
 	WSAStartup(MAKEWORD(2, 2), &dat);//init socket
-
+#else
+#endif
+	startfunc_is_finished = false;
 	set_thread_exit_flag = false;
 	listen_thread_exited_flag = false;
 	parse_thread_exited_flag = false;
@@ -78,6 +83,7 @@ void JProtocol::InitProtocolData()
 	statemap.insert(std::pair<string, int>("CallEND", CALLEND));
 
 	//init default protocol data
+	thePROTOCOL_Ctrlr.clientfd = INVALID_SOCKET;
 	thePROTOCOL_Ctrlr.MASTER_State = CONNECT;
 	thePROTOCOL_Ctrlr.PROTOCOL_Fixed_Header.identifier = "";
 	thePROTOCOL_Ctrlr.PROTOCOL_Fixed_Header.type = "Request";
@@ -136,6 +142,10 @@ void JProtocol::Start()
 	if (status != true)
 	{
 		TRACE(_T("InitSocket fail...\n"));
+	}
+	else
+	{
+		startfunc_is_finished = status;
 	}
 
 }
@@ -234,8 +244,7 @@ void JProtocol::DataProcessFunc()
 
 	if (RequestCallBackFunc != NULL)
 	{
-
-		ResponeData r = { thePROTOCOL_Ctrlr.PROTOCOL_Fixed_Header.identifier, thePROTOCOL_Ctrlr.PROTOCOL_params.key,
+		ResponeData r = { thePROTOCOL_Ctrlr.clientfd, thePROTOCOL_Ctrlr.PROTOCOL_Fixed_Header.identifier, thePROTOCOL_Ctrlr.PROTOCOL_params.key,
 		thePROTOCOL_Ctrlr.PROTOCOL_params.channel, thePROTOCOL_Ctrlr.PROTOCOL_params.Listening_Channels_Group.channel1_group_id,
 		thePROTOCOL_Ctrlr.PROTOCOL_params.Listening_Channels_Group.channel2_group_id,
 		thePROTOCOL_Ctrlr.PROTOCOL_params.src, thePROTOCOL_Ctrlr.PROTOCOL_params.dst,
@@ -258,25 +267,27 @@ int JProtocol::ProtocolParseThread(void *p)
 }
 int JProtocol::ProtocolParseThreadFunc()
 {
-	/*std::string str_identifier;
-	std::string str_type;
-	std::string str_name;
-	std::string str_status;*/
 	Json::Value val;
 	Json::Reader reader;
-
-	char queue_data[512];
+	char queue_data[1024];
+	char json_data[512];
 	int len=0;
 	int return_value = -1;
-	memset(queue_data, 0x00, 512);
+	SOCKET client_fd = INVALID_SOCKET;
+	memset(queue_data, 0x00, 1024);
+	memset(json_data, 0x00, 512);
 
 	while ((return_value = jqueue.TakeFromQueue(queue_data, (int&)len, 200)) != WAIT_FAILED)//200ms
 	{
 		if (set_thread_exit_flag)break;
 		if (WAIT_OBJECT_0 == return_value)
 		{
-			if (reader.parse(queue_data, val))//Parse JSON buff
+			GOSSCANF(queue_data, "%4D", &client_fd);
+			memcpy(json_data, &queue_data[sizeof(SOCKET)], sizeof(json_data));
+			if (reader.parse(json_data, val))//Parse JSON buff
 			{
+				thePROTOCOL_Ctrlr.clientfd = client_fd;
+
 				thePROTOCOL_Ctrlr.PROTOCOL_Fixed_Header.identifier = val["identifier"].asString();
 				thePROTOCOL_Ctrlr.PROTOCOL_Fixed_Header.type = val["type"].asString();
 				thePROTOCOL_Ctrlr.PROTOCOL_Fixed_Header.name = val["name"].asString();
@@ -318,7 +329,9 @@ int JProtocol::ProtocolParseThreadFunc()
 				TRACE(_T("reader.parse err!!!\n"));
 			}
 			val.clear();
-			memset(queue_data, 0x00, 512);		
+			client_fd = INVALID_SOCKET;
+			memset(queue_data, 0x00, 1024);
+			memset(json_data, 0x00, 512);
 		}
 		else
 		{
@@ -378,6 +391,17 @@ int JProtocol::ListenThreadFunc()
 
 }
 
+int JProtocol::PushRecvBuffToQueue(SOCKET clientfd, char *buff, int buff_len)
+{
+	if ((buff_len > 512) || (clientfd == INVALID_SOCKET))return -1;
+	char data[2048];
+	memset(data, 0x00, sizeof(data));
+	GOSPRINTF(data, sizeof(SOCKET)+1, "%d", clientfd);
+	memcpy(&data[sizeof(SOCKET)], buff, buff_len);
+	jqueue.PushToQueue(data, buff_len + sizeof(SOCKET));//push to fifo-buff
+	return 0;
+
+}
 int JProtocol::ProcessClient(SOCKET clientfd)
 {
 	int return_value = 0;
@@ -393,7 +417,6 @@ int JProtocol::ProcessClient(SOCKET clientfd)
 	//ÉèÖÃRECV³¬Ê±
 	setsockopt(clientfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&recvTimeout, sizeof(int));
 	TRACE(_T("Connected\n"));
-	//while (islistenstatus)
 	while (!set_thread_exit_flag)
 	{
 		if ((recv_length = recv(clientfd, &recvbuf[count], BUFLENGTH, 0)) > 0)
@@ -409,10 +432,7 @@ int JProtocol::ProcessClient(SOCKET clientfd)
 			if ((recvbuf[0] == PROTOCOL_HEAD) && (recv_length >= 5) && (bytes_remained == 0))//protocol start
 			{
 					memcpy((void*)len_str.c_str(), &recvbuf[1], 4);
-					sscanf_s(len_str.c_str(), "%D", &pro_length);//string->int
-
-					/*pro_length = (recvbuf[1] - 0x30) * 1000 + (recvbuf[2] - 0x30) * 100
-						+ (recvbuf[3] - 0x30) * 10 + (recvbuf[4] - 0x30);*/
+					GOSSCANF(len_str.c_str(), "%D", &pro_length);//string->int
 
 					if (recvbuf[5] != '{')
 					{
@@ -426,7 +446,7 @@ int JProtocol::ProcessClient(SOCKET clientfd)
 					if (bytes_remained == 0)
 					{
 						TRACE(_T("recv_okay\n"));
-						jqueue.PushToQueue(&recvbuf[5], pro_length);//push to fifo-buff
+						PushRecvBuffToQueue(clientfd, &recvbuf[5], pro_length);
 						//clear temp
 						pro_length = 0;
 						count = 0;
@@ -442,7 +462,7 @@ int JProtocol::ProcessClient(SOCKET clientfd)
 					else//recv_length >(pro_length+5) (bytes_remained < 0)//need  to dismantle the buff
 					{
 						TRACE(_T("need  to dismantle the buff\n"));
-						jqueue.PushToQueue(&recvbuf[5], pro_length);//push to fifo-buff
+						PushRecvBuffToQueue(clientfd, &recvbuf[5], pro_length);
 
 						memcpy_s(&recvbuf[0], BUFLENGTH, &recvbuf[pro_length+5], recv_length - 5 - pro_length);
 						memset(&recvbuf[recv_length - pro_length - 5], 0x00, BUFLENGTH - (recv_length - pro_length - 5));
@@ -461,7 +481,7 @@ int JProtocol::ProcessClient(SOCKET clientfd)
 				if (bytes_remained == recv_length)
 				{
 					TRACE(_T("recv_okay\n"));
-					jqueue.PushToQueue(&recvbuf[5], pro_length);//push to fifo-buff
+					PushRecvBuffToQueue(clientfd, &recvbuf[5], pro_length);
 					//clear temp
 					pro_length = 0;
 					count = 0;
@@ -478,7 +498,8 @@ int JProtocol::ProcessClient(SOCKET clientfd)
 				else//bytes_remained < recv_length
 				{
 					TRACE(_T("need  to dismantle the buff-2\n"));
-					jqueue.PushToQueue(&recvbuf[5], pro_length);//push to fifo-buff
+					PushRecvBuffToQueue(clientfd, &recvbuf[5], pro_length);
+
 					memcpy_s(&recvbuf[0], BUFLENGTH, &recvbuf[pro_length + 5], (count + recv_length - pro_length - 5));
 					memset(&recvbuf[count + recv_length - pro_length - 5], 0x00, BUFLENGTH - (count + recv_length - pro_length - 5));
 
@@ -514,7 +535,7 @@ int JProtocol::ProcessClient(SOCKET clientfd)
 			else
 			{
 
-				TRACE(_T("Close client\n"));
+				TRACE(_T("Client close socket\n"));
 				return_value = -1;
 				break;
 			}
@@ -534,16 +555,43 @@ bool JProtocol::CloseSocket(SOCKET sockfd)
 
 }
 
-int JProtocol::SendDataToTheThirdParty(std::string buff)
+int JProtocol::PhySocketSendData(SOCKET Objsoc, char *buff, int send_len)
 {
 	int copy_len = -1;
 	int count = 0;
+
+	do
+	{
+		copy_len = send(Objsoc, &buff[count], (send_len - count), 0);
+		if (copy_len < 0)
+		{
+			count = -1;
+			TRACE(_T("send SOCKET_ERROR!!!\n"));
+			return count;
+		}
+		else
+		{
+			count += copy_len;
+			TRACE(("send length is %d\n"), copy_len);
+		}
+
+	} while ((send_len - count) != 0);
+
+	count = 0;
+	return count;
+
+
+}
+int JProtocol::SendDataToTheThirdParty(SOCKET fd, std::string buff)
+{
 	int return_value = 0;
-	int pro_len = 0;
 	int send_len = 0;
+	SOCKET Objsoc = 0;
+	std::map<SOCKET, struct sockaddr_in> ::iterator it;
 
 	stringstream ss;
 	ss<< buff.size();
+	Objsoc = fd;
 
 	phy_fragment_t phy_fragment;
 	memset(phy_fragment.fragment_element, 0x00, sizeof(phy_fragment));
@@ -567,42 +615,39 @@ int JProtocol::SendDataToTheThirdParty(std::string buff)
 	memcpy(phy_fragment.transport_protocol_fragment.json_payload, buff.c_str(), buff.size());
 	send_len = strlen(phy_fragment.fragment_element);
 
-	if (!clientmap.empty())
+	if (Objsoc != INVALID_SOCKET)
 	{
-		SOCKET Objsoc =0;
-		WaitForSingleObject(clientmap_locker, INFINITE);
-		Objsoc = clientmap.begin()->first;
-		ReleaseMutex(clientmap_locker);
-
-		do
+		if (Objsoc == 0)
 		{
-			//copy_len = send(Objsoc, &send_buff[count], (pro_len-count), 0);
-			copy_len = send(Objsoc, &phy_fragment.fragment_element[count], (send_len - count), 0);
-			if (copy_len < 0)
+			WaitForSingleObject(clientmap_locker, INFINITE);
+			for (it = clientmap.begin(); it != clientmap.end(); ++it)
 			{
-				count = -1;
-				TRACE(_T("send SOCKET_ERROR!!!\n"));
-				break;
+				Objsoc = it->first;
+				return_value = PhySocketSendData(Objsoc, phy_fragment.fragment_element, send_len);
 			}
-			else
-			{
-				count += copy_len;
-				TRACE(("send length is %d\n"), copy_len);
-			}
+			ReleaseMutex(clientmap_locker);
+			/*SOCKET Objsoc =0;
+			WaitForSingleObject(clientmap_locker, INFINITE);
+			Objsoc = clientmap.begin()->first;
+			ReleaseMutex(clientmap_locker);*/
 
-		} while ((send_len - count) != 0);
+		}
+		else
+		{
+			return_value = PhySocketSendData(Objsoc, phy_fragment.fragment_element, send_len);
+		}
 
 	}
 	else
 	{
-		TRACE(_T("clientmap is empty!!!\n"));
+		TRACE(_T("socket is empty!!!\n"));
 	}
 
-	count = 0;
-	return count;
+	Objsoc = INVALID_SOCKET;
+	return return_value;
 }
 
-void JProtocol::ConnectReply(std::string status, std::string reason)
+void JProtocol::ConnectReply(SOCKET dst_fd, std::string status, std::string reason)
 {
 	
 	Json::Value send_root;
@@ -624,7 +669,7 @@ void JProtocol::ConnectReply(std::string status, std::string reason)
 
 	std::string SendBuf = style_write.write(send_root);
 
-	SendDataToTheThirdParty(SendBuf);
+	SendDataToTheThirdParty(dst_fd, SendBuf);
 	//SendBuf.clear();
 	//send_root.clear();
 	//send_arrayObj.clear();
@@ -632,7 +677,7 @@ void JProtocol::ConnectReply(std::string status, std::string reason)
 	TRACE(_T("Send ConnectReply\n"));
 
 }
-void JProtocol::ConfigReply(int channel1_value, int channel2_value)
+void JProtocol::ConfigReply(SOCKET dst_fd, int channel1_value, int channel2_value)
 {
 	Json::Value send_root;
 	Json::Value send_arrayObj1;
@@ -683,13 +728,13 @@ void JProtocol::ConfigReply(int channel1_value, int channel2_value)
 
 	std::string SendBuf = style_write.write(send_root);
 
-	SendDataToTheThirdParty(SendBuf);
+	SendDataToTheThirdParty(dst_fd, SendBuf);
 
 	TRACE(_T("Send ConfigReply\n"));
 
 
 }
-void JProtocol::QueryReply(int channel1_value, int channel2_value)
+void JProtocol::QueryReply(SOCKET dst_fd, int channel1_value, int channel2_value)
 {
 	Json::Value send_root;
 	Json::Value send_arrayObj1;
@@ -731,11 +776,11 @@ void JProtocol::QueryReply(int channel1_value, int channel2_value)
 
 	std::string SendBuf = style_write.write(send_root);
 
-	SendDataToTheThirdParty(SendBuf);
+	SendDataToTheThirdParty(dst_fd, SendBuf);
 	TRACE(_T("Send QueryReply\n"));
 
 }
-void JProtocol::CallRequestReply(std::string status, std::string reason)
+void JProtocol::CallRequestReply(SOCKET dst_fd, std::string status, std::string reason)
 {
 	Json::Value send_root;
 	Json::Value send_arrayObj;
@@ -756,11 +801,11 @@ void JProtocol::CallRequestReply(std::string status, std::string reason)
 
 	std::string SendBuf = style_write.write(send_root);
 
-	SendDataToTheThirdParty(SendBuf);
+	SendDataToTheThirdParty(dst_fd, SendBuf);
 	TRACE(_T("Send CallRequestReply\n"));
 
 }
-void JProtocol::CallReleaseReply(std::string status, std::string reason)
+void JProtocol::CallReleaseReply(SOCKET dst_fd, std::string status, std::string reason)
 {
 	Json::Value send_root;
 	Json::Value send_arrayObj;
@@ -781,11 +826,11 @@ void JProtocol::CallReleaseReply(std::string status, std::string reason)
 
 	std::string SendBuf = style_write.write(send_root);
 
-	SendDataToTheThirdParty(SendBuf);
+	SendDataToTheThirdParty(dst_fd, SendBuf);
 	TRACE(_T("Send CallReleaseReply\n"));
 
 }
-void JProtocol::CallStartNotify(int src, int dst, std::string channel)
+void JProtocol::CallStartNotify(SOCKET dst_fd, int src, int dst, std::string channel)
 {
 	Json::Value send_root;
 	Json::Value send_arrayObj;
@@ -807,12 +852,12 @@ void JProtocol::CallStartNotify(int src, int dst, std::string channel)
 
 	std::string SendBuf = style_write.write(send_root);
 
-	SendDataToTheThirdParty(SendBuf);
+	SendDataToTheThirdParty(dst_fd, SendBuf);
 
 	TRACE(_T("Send CallStartNotify\n"));
 
 }
-void JProtocol::CallEndNotify(int src, int dst, std::string channel)
+void JProtocol::CallEndNotify(SOCKET dst_fd, int src, int dst, std::string channel)
 {
 	Json::Value send_root;
 	Json::Value send_arrayObj;
@@ -834,7 +879,7 @@ void JProtocol::CallEndNotify(int src, int dst, std::string channel)
 
 	std::string SendBuf = style_write.write(send_root);
 
-	SendDataToTheThirdParty(SendBuf);
+	SendDataToTheThirdParty(dst_fd, SendBuf);
 	TRACE(_T("Send CallEndNotify\n"));
 
 }

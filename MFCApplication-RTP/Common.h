@@ -29,14 +29,17 @@ using namespace std;
 
 #ifdef WIN_RUNNING_PLATFORM
 #define GOSPRINTF(x, y, z, m)  sprintf_s((x), (y), (z), (m));
+#define GOSSCANF(x, y, z)  sscanf_s((x), (y), (z));
 #else
 #define GOSPRINTF(x, y, z, m)  sprintf((x), (y), (z), (m));
+#define GOSSCANF(x, y, z)  sscanf((x), (y), (z));
 #endif
 
 
 #pragma pack(1)
 struct ResponeData
 {
+	SOCKET socket_fd;
 	std::string identifier;
 	//std::string type;
 	//std::string name;
@@ -244,6 +247,7 @@ typedef struct{
 
 typedef struct{
 
+	SOCKET clientfd;//接收数据包的socket描述符，以便于socket发送时时使
 	PROTOCOL_Names MASTER_State;
 	//MASTER_States MASTER_State;
 	PROTOCOL_Fixed_Header_t PROTOCOL_Fixed_Header;

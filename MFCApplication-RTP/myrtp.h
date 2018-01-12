@@ -21,6 +21,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <process.h>
+#include "Common.h"
 
 using namespace jrtplib;
 using namespace std;

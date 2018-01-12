@@ -34,46 +34,51 @@ public:
 	/*
 	连接回复:
 	*/
-	void ConnectReply(std::string status, std::string reason="");
+	void ConnectReply(SOCKET fd, std::string status, std::string reason = "");
 
 	/*
 	配置回复
 	*/
-
-
-	
-	void ConfigReply(int channel1_value, int channel2_value);
+	void ConfigReply(SOCKET fd, int channel1_value, int channel2_value);
 
 	/*
 	查询回复
 	*/
 
-	void QueryReply(int channel1_value, int channel2_value);
+	void QueryReply(SOCKET fd, int channel1_value, int channel2_value);
 
 	/*
 	请求发起组呼回复
 	*/
-	void CallRequestReply(std::string status, std::string reason);
+	void CallRequestReply(SOCKET fd, std::string status, std::string reason);
 
 	/*
 	结束组呼回复
 	*/
-	void CallReleaseReply(std::string status, std::string reason);
+	void CallReleaseReply(SOCKET fd, std::string status, std::string reason);
 
 	/*
 	组呼开始通知
 	*/
-	void CallStartNotify(int src, int dst, std::string channel);
+	void CallStartNotify(SOCKET fd, int src, int dst, std::string channel);
 
 	/*
 	组呼结束通知
 	*/
-	void CallEndNotify(int src, int dst, std::string channel);
+	void CallEndNotify(SOCKET fd, int src, int dst, std::string channel);
 
 	/*
 	关闭服务器端
 	*/
 	void CloseMater();
+
+	/*
+	获取Master初始化是否完成
+	*/
+	bool IsMaterInitComplete()
+	{
+		return startfunc_is_finished;
+	}
 
 private:
 
@@ -96,7 +101,7 @@ private:
 
 	void DataProcessFunc();
 	//void WriteJsonData();
-	int SendDataToTheThirdParty(std::string buff);
+	int SendDataToTheThirdParty(SOCKET fd, std::string buff);
 
 	/*
 	socket初始化
@@ -156,12 +161,12 @@ private:
 			return true;
 
 	}
-	//Json::Value send_root;
-	//Json::Value send_arrayObj;
-	//Json::Value send_item;
-	//Json::StyledWriter style_write;
+
+	bool startfunc_is_finished;
 
 	std::string CreateGuid();
+	int PushRecvBuffToQueue(SOCKET clientfd, char *buff, int buff_len);
+	int PhySocketSendData(SOCKET fd, char *buff, int buff_len);
 
 };
 

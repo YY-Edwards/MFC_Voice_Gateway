@@ -48,4 +48,6 @@ public:
 	
 
 	afx_msg void OnBnClickedButton_TCPInit();
+	afx_msg void OnBnClickedSendStart();
+	afx_msg void OnBnClickedSendEnd();
 };
