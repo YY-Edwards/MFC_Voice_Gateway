@@ -42,9 +42,16 @@ public:
 	JProtocol *mastergate;
 
 	static CMFCApplicationRTPDlg *pThis;
-	//callbackfunc
+	//protocol callbackfunc
 	static void  MasterOnData(int command, ResponeData data);
 	void  MasterOnDataFunc(int command, ResponeData data);
+
+	//rtp callbackfunc
+	static void  RTPChannel1OnData(ResponeRTPData data);
+	void  RTPChannel1OnDataFunc(ResponeRTPData data);
+
+	static void  RTPChannel2OnData(ResponeRTPData data);
+	void  RTPChannel2OnDataFunc(ResponeRTPData data);
 	
 
 	afx_msg void OnBnClickedButton_TCPInit();

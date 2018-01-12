@@ -39,17 +39,23 @@ public:
 			destport：目标端口，
 			ssrc:预定义的语音数据标识
 		*/
-		void Rtp_Init(uint16_t portbase, uint16_t destport, uint32_t ssrc);
+		void RtpParamsInit(uint16_t portbase, uint16_t destport, uint32_t ssrc);
 
 		/*
 		RTP通道高级配置：
 		*/
-		void Set_ParamsForSender();
+		void SetParamsForSender();
 
 		/*
 		RTP通道发送数据：
 		*/
-		void SendRTPPayloadData(uint8_t* buff, uint32_t buff_length);
+		void SendRTPPayloadData(void* buff, uint32_t buff_length);
+
+		/*
+		回调接口
+		设置回调函数
+		*/
+		void SetCallBackFunc(void(*callBackFunc)(ResponeRTPData));
 
 
 		uint8_t *GetRTPPayloadData();
@@ -59,12 +65,16 @@ public:
 protected:
 
 		static int OnPollThread(void* p);
-		//static UINT OnPollThread(LPVOID p);
 		void OnPollThreadFunc();
-		void ProcessRTPPacket(const RTPSourceData &srcdat,const RTPPacket &rtppack);	
+		void ProcessRTPPacket(const RTPSourceData &srcdat,const RTPPacket &rtppack);
+		//回调接口
+		void(*RecvVoiceCallBackFunc)(ResponeRTPData);//接收语音数据的回调
+
+		void onData(void(*func)(ResponeRTPData), ResponeRTPData data);
 	
 	
 	private:
+
 
 		void SetThreadExitFlag()   { set_thread_exit_flag = true; }
 		bool IsThreadHasExit() {
@@ -73,7 +83,10 @@ protected:
 				return true;
 
 		}
+
 		void CheckError(int rtperr);
+
+		HANDLE ondata_locker;
 		bool poll_thread_isactive;
 		bool set_thread_exit_flag;
 		bool thread_exited_flag;

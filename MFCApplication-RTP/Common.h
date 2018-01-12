@@ -58,6 +58,14 @@ struct ResponeData
 };
 
 
+struct ResponeRTPData
+{
+	int32_t payloaddatalength;
+	uint32_t ssrc;
+	uint8_t *payloaddata;
+};
+
+
 //PROTOCOL State Master.
 typedef enum {
 	PROTOCOL_UNCONNECTEDWAITINGSTATUS,

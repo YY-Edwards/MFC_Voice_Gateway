@@ -196,7 +196,7 @@ void CMFCApplicationRTPDlg::OnBnClickedButton1()
 	CWnd *pWnd1 = GetDlgItem(IDC_BUTTON1);
 	pWnd1->EnableWindow(FALSE);
 
-	//channel1RTP->Rtp_Init(55500, 57400, 1973);
+	//channel1RTP->RtpParamsInit(55500, 57400, 1973);
 	//uint8_t silencebuffer[320];
 	//for (int i = 0; i < 320; i++)
 	//	silencebuffer[i] = 128;
@@ -211,91 +211,12 @@ void CMFCApplicationRTPDlg::OnBnClickedButton1()
 	//}
 	//
 	//channel1RTP->SetThreadExitFlag();
-	//channe21RTP->Rtp_Init(56500, 58400, 2012);
+	//channe21RTP->RtpParamsInit(56500, 58400, 2012);
 
-	TRACE(_T(" channel1RTP->Rtp_Init okay!\r\n"));
+	TRACE(_T(" channel1RTP->RtpParamsInit okay!\r\n"));
 	
 	// TODO:  在此添加控件通知处理程序代码
 }
-
-
-
-void CMFCApplicationRTPDlg::MasterOnData(int command, ResponeData data)
-{
-
-	if (pThis == NULL)exit(-1);
-	pThis->MasterOnDataFunc(command, data);
-
-}
-void CMFCApplicationRTPDlg::MasterOnDataFunc(int command, ResponeData data)
-{
-	std::string c_status = "success";
-
-	PROTOCOL_Names pro_name = (PROTOCOL_Names)command;
-	switch (pro_name)
-	{
-	case CONNECT:
-			mastergate->ConnectReply(data.socket_fd, "success", "fine!");
-			if (1)/*PTT Notice Enable*/
-			{
-
-			}
-		break;
-
-
-	case LISTENING:
-			if (data.channel1_group_id != 0)
-			{
-				if (channel1RTP == NULL){
-					channel1RTP = new MyRTP;
-					channel1RTP->Rtp_Init(CHANNEL1RTPBASEPORT, CHANNEL1RTPDESTPORT, CHANNEL1RTPSSRC);//是否隐式设置？
-				}
-				TRACE(("set channel1 is:%d\n"), data.channel1_group_id);
-	
-			}
-
-			if (data.channel2_group_id != 0)
-			{
-				if (channel2RTP == NULL){
-					channel2RTP = new MyRTP;
-					channel2RTP->Rtp_Init(CHANNEL2RTPBASEPORT, CHANNEL2RTPDESTPORT, CHANNEL2RTPSSRC);
-				}
-				TRACE(("set channel2 is:%d\n"), data.channel2_group_id);
-			}
-			if (data.channel1_group_id == 0 && data.channel2_group_id == 0)
-			{
-				TRACE(_T("No channel is set\n"));
-			}
-			mastergate->ConfigReply(data.socket_fd, data.channel1_group_id, data.channel2_group_id);
-		break;
-
-	case QUERY:
-		mastergate->QueryReply(data.socket_fd, data.channel1_group_id, data.channel2_group_id);
-		break;
-
-
-	case CALLREQUEST:
-		mastergate->CallRequestReply(data.socket_fd, "fail", "Unconnect");
-		if (c_status == "success")
-			mastergate->CallStartNotify(data.socket_fd, data.src_id, data.dst_id, data.channel_id);
-		break;
-
-	case CALLRELEASE:
-		mastergate->CallReleaseReply(data.socket_fd, "fail", "Unconnect");
-		if (c_status == "success")
-			mastergate->CallEndNotify(data.socket_fd, data.src_id, data.dst_id, data.channel_id);
-		break;
-	default:
-
-		break;
-
-
-	}
-
-	TRACE(_T("MasterOnDataFunc finished\n"));
-
-}
-
 
 void CMFCApplicationRTPDlg::OnBnClickedButton_TCPInit()
 {
@@ -309,7 +230,6 @@ void CMFCApplicationRTPDlg::OnBnClickedButton_TCPInit()
 	
 	// TODO:  在此添加控件通知处理程序代码
 }
-
 
 void CMFCApplicationRTPDlg::OnBnClickedSendStart()
 {
@@ -327,7 +247,6 @@ void CMFCApplicationRTPDlg::OnBnClickedSendStart()
 
 }
 
-
 void CMFCApplicationRTPDlg::OnBnClickedSendEnd()
 {
 	int src = 0xffff;
@@ -340,5 +259,125 @@ void CMFCApplicationRTPDlg::OnBnClickedSendEnd()
 		if (mastergate->IsMaterInitComplete())mastergate->CallEndNotify(0, src, dst, channel);
 
 	}
+
+}
+
+
+
+void CMFCApplicationRTPDlg::RTPChannel1OnData(ResponeRTPData data)
+{
+	if (pThis == NULL)exit(-1);
+	pThis->RTPChannel1OnDataFunc(data);
+
+}
+void CMFCApplicationRTPDlg::RTPChannel1OnDataFunc(ResponeRTPData data)
+{
+	TRACE(_T("RTPChannel-1: Receive a packet of voice data\n"));
+	
+}
+
+void CMFCApplicationRTPDlg::RTPChannel2OnData(ResponeRTPData data)
+{
+	if (pThis == NULL)exit(-1);
+	pThis->RTPChannel2OnDataFunc(data);
+
+}
+void CMFCApplicationRTPDlg::RTPChannel2OnDataFunc(ResponeRTPData data)
+{
+	TRACE(_T("RTPChannel-2: Receive a packet of voice data\n"));
+
+}
+
+
+void CMFCApplicationRTPDlg::MasterOnData(int command, ResponeData data)
+{
+
+	if (pThis == NULL)exit(-1);
+	pThis->MasterOnDataFunc(command, data);
+
+}
+void CMFCApplicationRTPDlg::MasterOnDataFunc(int command, ResponeData data)
+{
+	std::string c_status = "success";
+	//char *sendVoiceBuff = {"abcdefghiojklmnopqrstuvwxyz"};
+	char sendVoiceBuff[50] = "abcdefghiojklmnopqrstuvwxyz";
+
+	PROTOCOL_Names pro_name = (PROTOCOL_Names)command;
+	switch (pro_name)
+	{
+	case CONNECT:
+		mastergate->ConnectReply(data.socket_fd, "success", "fine!");
+		if (1)/*PTT Notice Enable*/
+		{
+
+		}
+		break;
+
+
+	case LISTENING:
+		if (data.channel1_group_id != 0)
+		{
+			if (channel1RTP == NULL){
+				channel1RTP = new MyRTP;
+				channel1RTP->RtpParamsInit(CHANNEL1RTPBASEPORT, CHANNEL1RTPDESTPORT, CHANNEL1RTPSSRC);//是否隐式设置？
+				channel1RTP->SetCallBackFunc(RTPChannel1OnData);
+			}
+			TRACE(("set channel1 is:%d\n"), data.channel1_group_id);
+
+		}
+
+		if (data.channel2_group_id != 0)
+		{
+			if (channel2RTP == NULL){
+				channel2RTP = new MyRTP;
+				channel2RTP->RtpParamsInit(CHANNEL2RTPBASEPORT, CHANNEL2RTPDESTPORT, CHANNEL2RTPSSRC);
+				channel2RTP->SetCallBackFunc(RTPChannel2OnData);
+			}
+			TRACE(("set channel2 is:%d\n"), data.channel2_group_id);
+		}
+		if (data.channel1_group_id == 0 && data.channel2_group_id == 0)
+		{
+			TRACE(_T("No channel is set\n"));
+		}
+		mastergate->ConfigReply(data.socket_fd, data.channel1_group_id, data.channel2_group_id);
+		break;
+
+	case QUERY:
+		mastergate->QueryReply(data.socket_fd, data.channel1_group_id, data.channel2_group_id);
+		break;
+
+
+	case CALLREQUEST:
+		mastergate->CallRequestReply(data.socket_fd, "fail", "Unconnect");
+		if (c_status == "success")
+		{
+			TRACE(_T("Start to send RTP Voice\n"));
+			mastergate->CallStartNotify(data.socket_fd, data.src_id, data.dst_id, data.channel_id);
+
+			if ((data.channel_id == "channel1") && channel1RTP != NULL)
+				channel1RTP->SendRTPPayloadData(sendVoiceBuff, 24);
+
+			if ((data.channel_id == "channel2") && channel2RTP != NULL)
+				channel2RTP->SendRTPPayloadData(sendVoiceBuff, 24);
+
+		}
+		break;
+
+	case CALLRELEASE:
+		mastergate->CallReleaseReply(data.socket_fd, "fail", "Unconnect");
+		if (c_status == "success")
+		{
+			TRACE(_T("Stop to send RTP Voice\n"));
+			mastergate->CallEndNotify(data.socket_fd, data.src_id, data.dst_id, data.channel_id);
+		}
+		break;
+	default:
+
+		break;
+
+
+	}
+
+	TRACE(_T("MasterOnDataFunc finished\n"));
 
 }
