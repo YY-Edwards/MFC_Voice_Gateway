@@ -58,6 +58,7 @@ CMFCApplicationRTPDlg::CMFCApplicationRTPDlg(CWnd* pParent /*=NULL*/)
 	//WSAStartup(MAKEWORD(2, 2), &dat);//init socket
 
 	pThis = this;
+	fp = NULL;;
 	channel1RTP = NULL;
 	channel2RTP = NULL;
 	mastergate = new JProtocol;
@@ -73,6 +74,11 @@ CMFCApplicationRTPDlg::~CMFCApplicationRTPDlg()
 	{
 		delete channel1RTP;
 		channel1RTP = NULL;
+		if (fp != NULL)
+		{
+			fclose(fp);
+			fp = NULL;
+		}
 	}
 	if (channel2RTP != NULL)
 	{
@@ -286,6 +292,7 @@ void CMFCApplicationRTPDlg::RTPChannel1OnDataFunc(ResponeRTPData data)
 {
 	static int count = 0;
 	count++;
+	fwrite(data.payloaddata, 1, data.payloaddatalength, fp);
 	TRACE(("RTPChannel-1: Receive %d packet of voice data\n"), count);
 	
 }
@@ -337,8 +344,15 @@ void CMFCApplicationRTPDlg::MasterOnDataFunc(int command, ResponeData data)
 				channel1RTP = new MyRTP;
 				channel1RTP->RtpParamsInit(CHANNEL1RTPBASEPORT, CHANNEL1RTPDESTPORT, CHANNEL1RTPSSRC);//ÊÇ·ñÒþÊ½ÉèÖÃ£¿
 				channel1RTP->SetCallBackFunc(RTPChannel1OnData);
+
 			}
 			TRACE(("set channel1 is:%d\n"), data.channel1_group_id);
+
+			fp = fopen("E:\\CloudMusic\\master_recv_voice.pcm", "wb+");
+			if (fp == NULL){
+				printf("fp  fail\n");
+			}
+			fseek(fp, 0, SEEK_SET);
 
 		}
 

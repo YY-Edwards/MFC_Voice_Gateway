@@ -53,6 +53,7 @@ public:
 	static void  RTPChannel2OnData(ResponeRTPData data);
 	void  RTPChannel2OnDataFunc(ResponeRTPData data);
 	
+	FILE *fp;
 
 	afx_msg void OnBnClickedButton_TCPInit();
 	afx_msg void OnBnClickedSendStart();

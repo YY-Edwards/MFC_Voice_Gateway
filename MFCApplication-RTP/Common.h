@@ -25,7 +25,7 @@ using namespace std;
 #define						BUFLENGTH								1024
 
 #define						PROTOCOL_HEAD							0x01
-#define						PROTOCOL_LENGTH							4
+#define						PROTOCOL_PACKAGE_LENGTH							4
 
 #ifdef WIN_RUNNING_PLATFORM
 #define GOSPRINTF(x, y, z, m)  sprintf_s((x), (y), (z), (m));

@@ -431,7 +431,7 @@ int JProtocol::ProcessClient(SOCKET clientfd)
 
 			if ((recvbuf[0] == PROTOCOL_HEAD) && (recv_length >= 5) && (bytes_remained == 0))//protocol start
 			{
-					memcpy((void*)len_str.c_str(), &recvbuf[1], 4);
+					memcpy((void*)len_str.c_str(), &recvbuf[1], PROTOCOL_PACKAGE_LENGTH);
 					GOSSCANF(len_str.c_str(), "%D", &pro_length);//string->int
 
 					if (recvbuf[5] != '{')
@@ -601,13 +601,13 @@ int JProtocol::SendDataToTheThirdParty(SOCKET fd, std::string buff)
 	if (buff.size() < 1000)
 	{
 		phy_fragment.transport_protocol_fragment.payload_len[0] = '0';
-		memcpy(&(phy_fragment.transport_protocol_fragment.payload_len[1]), ss.str().c_str(), 3);
+		memcpy(&(phy_fragment.transport_protocol_fragment.payload_len[1]), ss.str().c_str(), PROTOCOL_PACKAGE_LENGTH-1);
 		//sprintf_s如下操作即可
 		//sprintf_s(&(phy_fragment.transport_protocol_fragment.payload_len[1]), 10,  "%d", buff.size());
 	}
 	else
 	{
-		memcpy(&(phy_fragment.transport_protocol_fragment.payload_len[0]), ss.str().c_str(), 4);
+		memcpy(&(phy_fragment.transport_protocol_fragment.payload_len[0]), ss.str().c_str(), PROTOCOL_PACKAGE_LENGTH);
 		//sprintf_s(&(phy_fragment.transport_protocol_fragment.payload_len[0]), 10,  "%d", buff.size());
 
 	}
