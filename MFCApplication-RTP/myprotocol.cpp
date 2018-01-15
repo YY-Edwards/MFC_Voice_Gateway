@@ -34,7 +34,7 @@ JProtocol::~JProtocol()
 	statemap.clear();
 	clientmap.clear();
 
-#ifdef WIN_RUNNING_PLATFORM
+#ifdef WIN32
 	WSACleanup();
 #else
 #endif
@@ -50,7 +50,7 @@ JProtocol::~JProtocol()
 
 void JProtocol::InitProtocolData()
 {
-#ifdef WIN_RUNNING_PLATFORM
+#ifdef WIN32
 	WSADATA dat;
 	WSAStartup(MAKEWORD(2, 2), &dat);//init socket
 #else
@@ -282,7 +282,8 @@ int JProtocol::ProtocolParseThreadFunc()
 		if (set_thread_exit_flag)break;
 		if (WAIT_OBJECT_0 == return_value)
 		{
-			GOSSCANF(queue_data, "%4D", &client_fd);
+			/*GOSSCANF(queue_data, "%4D", &client_fd);*/
+			sscanf(queue_data, "%4D", &client_fd);
 			memcpy(json_data, &queue_data[sizeof(SOCKET)], sizeof(json_data));
 			if (reader.parse(json_data, val))//Parse JSON buff
 			{
@@ -396,7 +397,8 @@ int JProtocol::PushRecvBuffToQueue(SOCKET clientfd, char *buff, int buff_len)
 	if ((buff_len > 512) || (clientfd == INVALID_SOCKET))return -1;
 	char data[2048];
 	memset(data, 0x00, sizeof(data));
-	GOSPRINTF(data, sizeof(SOCKET)+1, "%d", clientfd);
+	/*GOSPRINTF(data, sizeof(SOCKET)+1, "%d", clientfd);*/
+	sprintf(data, "%d", clientfd);
 	memcpy(&data[sizeof(SOCKET)], buff, buff_len);
 	jqueue.PushToQueue(data, buff_len + sizeof(SOCKET));//push to fifo-buff
 	return 0;
@@ -432,7 +434,8 @@ int JProtocol::ProcessClient(SOCKET clientfd)
 			if ((recvbuf[0] == PROTOCOL_HEAD) && (recv_length >= 5) && (bytes_remained == 0))//protocol start
 			{
 					memcpy((void*)len_str.c_str(), &recvbuf[1], PROTOCOL_PACKAGE_LENGTH);
-					GOSSCANF(len_str.c_str(), "%D", &pro_length);//string->int
+					//GOSSCANF(len_str.c_str(), "%D", &pro_length);//string->int
+					sscanf(len_str.c_str(), "%D", &pro_length);//string->int
 
 					if (recvbuf[5] != '{')
 					{
@@ -892,7 +895,8 @@ std::string JProtocol::CreateGuid()
 	{
 		float Num = (float)(rand() % 16);
 		int nValue = (int)floor(Num);
-		GOSPRINTF((char *)strValue.c_str(), 2, "%0x", nValue);
+		/*GOSPRINTF((char *)strValue.c_str(), 2, "%0x", nValue);*/
+		sprintf((char *)strValue.c_str(),"%0x", nValue);
 		strGuid.insert(i, strValue.c_str());
 	}
 	return strGuid;

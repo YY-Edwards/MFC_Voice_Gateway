@@ -1,6 +1,12 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#ifndef WIN32
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#else
+#include <winsock2.h>
+#endif // WIN32
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
@@ -27,12 +33,21 @@ using namespace std;
 #define						PROTOCOL_HEAD							0x01
 #define						PROTOCOL_PACKAGE_LENGTH							4
 
-#ifdef WIN_RUNNING_PLATFORM
-#define GOSPRINTF(x, y, z, m)  sprintf_s((x), (y), (z), (m));
-#define GOSSCANF(x, y, z)  sscanf_s((x), (y), (z));
+#ifdef WIN32
+//#define GOSPRINTF(x, y, z, m)  sprintf_s((x), (y), (z), (m));
+//#define GOSSCANF(x, y, z)  sscanf_s((x), (y), (z));
+typedef  CRITICAL_SECTION GOCRITICAL_SECTION;
+typedef  HANDLE GOMUTEX_T;
+typedef  HANDLE GOSEM_T;
+typedef  HANDLE GOCOND_T;
+
 #else
-#define GOSPRINTF(x, y, z, m)  sprintf((x), (y), (z), (m));
-#define GOSSCANF(x, y, z)  sscanf((x), (y), (z));
+//#define GOSPRINTF(x, y, z, m)  sprintf((x), (y), (z), (m));
+//#define GOSSCANF(x, y, z)  sscanf((x), (y), (z));
+typedef  pthread_mutex_t	GOMUTEX_T;
+typedef  sem_t				GOSEM_T;
+typedef  pthread_cond_t		GOCOND_T;
+
 #endif
 
 

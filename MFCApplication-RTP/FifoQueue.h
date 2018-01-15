@@ -7,6 +7,7 @@
 
 #ifndef FifoQueue_h_
 #define FifoQueue_h_
+#include "Common.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -15,7 +16,6 @@
 #include <queue>
 #include <stdint.h>
 #include <process.h>
-#include "Common.h"
 
 class FifoQueue 
 {
@@ -32,14 +32,15 @@ class FifoQueue
 
 	private:
 		//init mutex
-		HANDLE m_hLocker;
-		HANDLE m_hSemaphore;
+		GOSEM_T m_hSemaphore;
 		std::list<char *>  	m_list;
 		std::queue<char *>  m_queue;
 		char fifobuff[20][512];
 		volatile  uint32_t fifo_counter;
-		//char* sBuffer;
-		CRITICAL_SECTION cs;
+		GOCRITICAL_SECTION cs;
+
+
+
 	
 };
 

@@ -45,6 +45,9 @@
     <ClInclude Include="FifoQueue.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="SynInterface.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MFCApplication-RTP.cpp">
@@ -63,6 +66,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="FifoQueue.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="SynInterface.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
