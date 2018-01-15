@@ -196,6 +196,18 @@ void CMFCApplicationRTPDlg::OnBnClickedButton1()
 	CWnd *pWnd1 = GetDlgItem(IDC_BUTTON1);
 	pWnd1->EnableWindow(FALSE);
 
+	PROTOCOL_Fixed_Header_t header;
+	int len = 0;
+	len = sizeof(header);
+
+	header.identifier = "statusininfsffsfsfsfsvvvff";
+	len = sizeof(header);
+
+	header.identifier = "NULL";
+	len = sizeof(header);
+
+
+
 	//channel1RTP->RtpParamsInit(55500, 57400, 1973);
 	//uint8_t silencebuffer[320];
 	//for (int i = 0; i < 320; i++)
@@ -272,7 +284,9 @@ void CMFCApplicationRTPDlg::RTPChannel1OnData(ResponeRTPData data)
 }
 void CMFCApplicationRTPDlg::RTPChannel1OnDataFunc(ResponeRTPData data)
 {
-	TRACE(_T("RTPChannel-1: Receive a packet of voice data\n"));
+	static int count = 0;
+	count++;
+	TRACE(("RTPChannel-1: Receive %d packet of voice data\n"), count);
 	
 }
 
@@ -284,7 +298,9 @@ void CMFCApplicationRTPDlg::RTPChannel2OnData(ResponeRTPData data)
 }
 void CMFCApplicationRTPDlg::RTPChannel2OnDataFunc(ResponeRTPData data)
 {
-	TRACE(_T("RTPChannel-2: Receive a packet of voice data\n"));
+	static int count = 0;
+	count++;
+	TRACE(_T("RTPChannel-2: Receive %d packet of voice data\n"), count);
 
 }
 

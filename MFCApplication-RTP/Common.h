@@ -237,10 +237,7 @@ typedef struct{
 	uint32_t dst;
 	std::string channel; 
 	Listening_Channels_Groups_t Listening_Channels_Group;
-	//Listening_Channels Listening_channles;
 	Listening_Params_Channels_Params_t Listening_Params_Channels_Params;
-	//Channel_Params Channel1_Param;
-	//Channel_Params Channel2_Param;
 
 }PROTOCOL_Params;
 
@@ -264,15 +261,6 @@ typedef struct{
 	PROTOCOL_Params PROTOCOL_params;
 		 
 }PROTOCOL_Ctrlr;
-
-
-
-//typedef union
-//{
-//	json_content_connect_req_t json_content_connect_req;
-//	json_content_connect_reply_t json_content_connect_reply;
-//
-//}json_payload_t;
 
 
 typedef struct{
