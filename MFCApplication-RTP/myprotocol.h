@@ -101,6 +101,10 @@ private:
 
 	void DataProcessFunc();
 	//void WriteJsonData();
+	
+	/*
+	打包json数据包
+	*/
 	int SendDataToTheThirdParty(SOCKET fd, std::string buff);
 
 	/*
@@ -110,6 +114,10 @@ private:
 	//bool islistenstatus;
 	bool InitSocket();
 	bool CloseSocket(SOCKET sockfd);
+
+	/*
+	初始化成员变量
+	*/
 	void InitProtocolData();
 
 	//HANDLE ondata_locker;
@@ -122,6 +130,7 @@ private:
 	struct sockaddr_in remote_addr; //client_address
 
 	//HANDLE listen_thread_handle;
+	//线程接口类指针
 	MyCreateThread *listen_thread_p[MAX_LISTENING_COUNT];
 	MyCreateThread *parse_thread_p;
 	//MyCreateThread *data_thread_p;
@@ -132,14 +141,14 @@ private:
 
 	FifoQueue jqueue;//JSON data queue
 
-	PROTOCOL_Ctrlr thePROTOCOL_Ctrlr;
-	std::map <std::string, int>  statemap;
+	PROTOCOL_Ctrlr thePROTOCOL_Ctrlr;//协议结构
+	std::map <std::string, int>  statemap;//状态机
 	std::map <SOCKET, struct sockaddr_in>  clientmap;//save client-info
 
 	bool set_thread_exit_flag;
 	bool listen_thread_exited_flag;
 	bool parse_thread_exited_flag;
-	int listen_numb;
+	int listen_numb;//监听计数值
 
 	/*
 	设置线程退出标志
@@ -147,8 +156,19 @@ private:
 	void SetThreadExitFlag()   { set_thread_exit_flag = true; }
 	bool startfunc_is_finished;
 
+	/*
+	获取UUID
+	*/
 	std::string CreateGuid();
+	
+	/*
+	打包协议数据
+	*/
 	int PushRecvBuffToQueue(SOCKET clientfd, char *buff, int buff_len);
+	
+	/*
+	物理层发送协议数据包
+	*/
 	int PhySocketSendData(SOCKET fd, char *buff, int buff_len);
 
 };

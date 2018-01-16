@@ -126,6 +126,9 @@ class MyCreateThread
 public:
 
 #ifdef WIN32
+	/*
+	创建线程
+	*/
 	MyCreateThread(void *func, void *ptr);
 
 	HANDLE GetThreadHandle(){ return thread_handle; }
@@ -136,7 +139,9 @@ public:
 	pthread_t GetThreadHandle(){ return thread_handle; }
 
 #endif
-
+	/*
+	回收线程
+	*/
 	~MyCreateThread();
 
 

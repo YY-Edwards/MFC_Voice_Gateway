@@ -2,11 +2,17 @@
 #define COMMON_H
 
 #ifndef WIN32
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <poll.h>
 #include <signal.h> 
+#include <errno.h> 
+#include <fcntl.h>
+
 #else
 #include <winsock2.h>
 #include <process.h>
