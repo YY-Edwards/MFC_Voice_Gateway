@@ -20,10 +20,16 @@ JProtocol::~JProtocol()
 	CloseMater();
 	//WSACleanup();
 	SetThreadExitFlag();
-	do
+
+	WaitForSingleObject(parse_thread_p->GetThreadHandle(), INFINITE);
+	for (int i = 0; i < listen_numb; i++)//有待测试
+	{
+		WaitForSingleObject(listen_thread_p[i]->GetThreadHandle(), INFINITE);
+	}
+	/*do
 	{
 		Sleep(30);
-	} while ((!(IsListenThreadHasExit())) || (!(IsParseThreadHasExit())));
+	} while ((!(IsListenThreadHasExit())) || (!(IsParseThreadHasExit())));*/
 
 	jqueue.ClearQueue();
 	statemap.clear();
@@ -42,9 +48,22 @@ JProtocol::~JProtocol()
 		clientmap_locker = NULL;
 	}
 
-	CloseHandle(listen_thread_handle);
-	CloseHandle(parse_thread_handle);
-	CloseHandle(data_thread_handle);
+	if (parse_thread_p != NULL)
+	{
+		delete parse_thread_p;
+		parse_thread_p = NULL;
+
+	}
+	for (int i = 0; i < MAX_LISTENING_COUNT; i++)
+	{
+		if (listen_thread_p[i]!=NULL)
+		{
+			delete listen_thread_p[i];
+			listen_thread_p[i] = NULL;		
+		}
+	}
+	//CloseHandle(listen_thread_handle);
+	//CloseHandle(parse_thread_handle);
 
 #ifdef WIN32
 	WSACleanup();
@@ -73,11 +92,18 @@ void JProtocol::InitProtocolData()
 	parse_thread_exited_flag = false;
 
 	socketopen = false;
-	serversoc = 0;;
+	serversoc = 0;
+	listen_numb = 0;
+	memset(listen_thread_p, 0, MAX_LISTENING_COUNT*sizeof(MyCreateThread *));//注意大小问题
+	//for (int i = 0; i < MAX_LISTENING_COUNT; i++)
+	//{
+	//	listen_thread_p[i] = NULL;
+	//}
+	parse_thread_p = NULL;
 	//islistenstatus = false;
-	listen_thread_handle = NULL;
-	parse_thread_handle = NULL;
-	data_thread_handle = NULL;
+	//listen_thread_handle = NULL;
+	//parse_thread_handle = NULL;
+	//data_thread_handle = NULL;
 	memset(recvbuf, 0x00, BUFLENGTH);
 	RequestCallBackFunc = NULL;
 
@@ -208,24 +234,29 @@ bool JProtocol::InitSocket()
 }
 void JProtocol::CreateListenThread()
 {
-	listen_thread_handle = (HANDLE)_beginthreadex(NULL, 0, (unsigned int(__stdcall*)(void *))ListenThread, this, 0, NULL);
-	if (listen_thread_handle == NULL)
+	if (listen_numb < MAX_LISTENING_COUNT)
 	{
-		std::cout << "create thread failed" << std::endl;
-		system("pause");
+		listen_thread_p[listen_numb++] = new MyCreateThread(ListenThread, this);
 	}
+
+	//listen_thread_handle = (HANDLE)_beginthreadex(NULL, 0, (unsigned int(__stdcall*)(void *))ListenThread, this, 0, NULL);
+	//if (listen_thread_handle == NULL)
+	//{
+	//	std::cout << "create thread failed" << std::endl;
+	//	system("pause");
+	//}
 
 }
 void JProtocol::CreatProtocolParseThread()
 {
-	//parse_thread_handle = (HANDLE)_beginthreadex(NULL, 0, (unsigned int(__stdcall*)(void *))ProtocolParseThread, this, 0, NULL);
-	parse_thread_handle = (HANDLE)GOTHREADCREATE(NULL, 0, (unsigned int(__stdcall*)(void *))ProtocolParseThread, this, 0, NULL);
-	if (parse_thread_handle == NULL)
+	parse_thread_p = new MyCreateThread(ProtocolParseThread, this);
+	/*parse_thread_handle = (HANDLE)_beginthreadex(NULL, 0, (unsigned int(__stdcall*)(void *))ProtocolParseThread, this, 0, NULL);
+		if (parse_thread_handle == NULL)
 	{
 		std::cout << "create thread failed" << std::endl;
 		system("pause");
 	}
-
+*/
 }
 
 void JProtocol::DataProcessFunc()
@@ -359,7 +390,7 @@ int JProtocol::ProtocolParseThreadFunc()
 	}
 
 	TRACE((" exit ProtocolParseThreadFunc : 0x%x\n"), GetCurrentThreadId());
-	parse_thread_exited_flag = true;
+	//parse_thread_exited_flag = true;
 	return return_value;
 }
 int JProtocol::ListenThread(void* p)
@@ -407,7 +438,7 @@ int JProtocol::ListenThreadFunc()
 
 	CloseSocket(currentclientsoc);
 	TRACE(("Erase clientfd ,Close socket and exit listenthread: 0x%x\n"), GetCurrentThreadId());
-	listen_thread_exited_flag = true;
+	//listen_thread_exited_flag = true;
 
 	return return_value;
 

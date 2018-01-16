@@ -8,6 +8,9 @@
 #include "FifoQueue.h"
 
 FifoQueue::FifoQueue()
+:queuelock(NULL)
+, queuesem(NULL)
+,fifo_counter(0)
 {
 	
 	//m_hSemaphore = CreateSemaphore(NULL, 0, 100, NULL);
@@ -19,7 +22,6 @@ FifoQueue::FifoQueue()
 #endif
 
 	queuesem = new MySynSem();
-	fifo_counter = 0;
 	for (int i = 0; i < 20; i++){
 		memset(&fifobuff[i][0], 0x00, 512);
 	}

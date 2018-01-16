@@ -78,12 +78,12 @@ protected:
 
 
 		void SetThreadExitFlag()   { set_thread_exit_flag = true; }
-		bool IsThreadHasExit() {
-			if (rx_rtp_handle)return thread_exited_flag;
+		/*bool IsThreadHasExit() {
+			if (rx_rtp_thread_p)return thread_exited_flag;
 			else
 				return true;
 
-		}
+		}*/
 
 		void CheckError(int rtperr);
 
@@ -91,11 +91,12 @@ protected:
 		ILock *ondatalock;
 		bool poll_thread_isactive;
 		bool set_thread_exit_flag;
-		bool thread_exited_flag;
+		//bool thread_exited_flag;
 		uint32_t ssrc;
 		uint32_t payloaddatalength;
 		uint8_t* payloaddata;
-		HANDLE rx_rtp_handle;
+		//HANDLE rx_rtp_handle;
+		MyCreateThread *rx_rtp_thread_p;
 	
 		
 };

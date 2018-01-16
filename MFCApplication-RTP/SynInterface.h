@@ -57,7 +57,6 @@ public:
 
 
 
-
 //临界区锁类:速度快，消耗资源小 
 class CriSection : public ILock
 {
@@ -120,6 +119,42 @@ private:
 	 
 
 };
+
+//线程接口类
+class MyCreateThread
+{
+public:
+
+#ifdef WIN32
+	MyCreateThread(void *func, void *ptr);
+
+	HANDLE GetThreadHandle(){ return thread_handle; }
+
+#else
+
+	MyCreateThread(pthread_t  *thread, void *func, void *ptr);
+	pthread_t GetThreadHandle(){ return thread_handle; }
+
+#endif
+
+	~MyCreateThread();
+
+
+
+private:
+
+#ifdef WIN32
+	HANDLE thread_handle;
+#else
+
+	pthread_t thread_handle;
+
+#endif
+
+
+
+};
+
 
 
 

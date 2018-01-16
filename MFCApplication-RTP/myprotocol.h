@@ -121,9 +121,12 @@ private:
 	struct sockaddr_in my_addr; /* loacl */
 	struct sockaddr_in remote_addr; //client_address
 
-	HANDLE listen_thread_handle;
-	HANDLE parse_thread_handle;
-	HANDLE data_thread_handle;
+	//HANDLE listen_thread_handle;
+	MyCreateThread *listen_thread_p[MAX_LISTENING_COUNT];
+	MyCreateThread *parse_thread_p;
+	//MyCreateThread *data_thread_p;
+	//HANDLE parse_thread_handle;
+	//HANDLE data_thread_handle;
 
 	char recvbuf[BUFLENGTH];
 
@@ -136,33 +139,36 @@ private:
 	bool set_thread_exit_flag;
 	bool listen_thread_exited_flag;
 	bool parse_thread_exited_flag;
+	int listen_numb;
 
 	/*
 	设置线程退出标志
 	*/
 	void SetThreadExitFlag()   { set_thread_exit_flag = true; }
 
-	/*
-	获取监听线程是否退出
-	*/
-	bool IsListenThreadHasExit() 
-	{
-		if (listen_thread_handle)return listen_thread_exited_flag;
-		else
-			return true;
+	///*
+	//获取监听线程是否退出
+	//*/
+	//bool IsListenThreadHasExit() 
+	//{
+	//	for (int i = 0; i < MAX_LISTENING_COUNT; i++)
+	//	{
+	//		if (listen_thread_p[i])return listen_thread_exited_flag;
+	//	}	
+	//	return true;
 
-	}
+	//}
 
-	/*
-	获取解析线程是否退出
-	*/
-	bool IsParseThreadHasExit()
-	{
-		if (parse_thread_handle)return parse_thread_exited_flag;
-		else
-			return true;
+	///*
+	//获取解析线程是否退出
+	//*/
+	//bool IsParseThreadHasExit()
+	//{
+	//	if (parse_thread_p)return parse_thread_exited_flag;
+	//	else
+	//		return true;
 
-	}
+	//}
 
 	bool startfunc_is_finished;
 

@@ -14,7 +14,7 @@ CriSection::CriSection()
 	InitializeCriticalSection(&m_critclSection);
 
 #else
-
+	m_critclSection = NULL;
 	pthread_mutex_init(&m_critclSection, NULL);
 
 #endif
@@ -63,6 +63,7 @@ void CriSection::Unlock()const
 
 
 Mutex::Mutex(const char * lockUniName)
+:m_mutex(NULL)
 {
 
 #ifdef WIN32
@@ -111,6 +112,7 @@ void Mutex::Unlock()const
 }
 
 MySynSem::MySynSem()
+:m_sem(NULL)
 {
 #ifdef WIN32
 	m_sem = CreateSemaphore(NULL, 0, 100, NULL);
@@ -172,6 +174,8 @@ void MySynSem::SemPost()const
 }
 
 MySynCond::MySynCond()
+:m_condlock(NULL)
+, m_cond(NULL)
 {
 	m_condlock = new Mutex("condlock");
 
@@ -250,3 +254,41 @@ void MySynCond::CondTrigger(bool isbroadcast)const
 
 }
 
+#ifdef WIN32
+MyCreateThread::MyCreateThread(void *func, void *ptr)
+:thread_handle(NULL)
+{
+	thread_handle = (HANDLE)_beginthreadex(NULL, 0, (unsigned int(__stdcall*)(void *))func, ptr, 0, NULL);
+	if (thread_handle == NULL)
+	{
+		std::cout << "create thread failed" << std::endl;
+		system("pause");
+	}
+}
+#else
+
+MyCreateThread::MyCreateThread(pthread_t  *thread, void *func, void *ptr)
+:thread_handle(NULL)
+{
+	int err =0;
+	err = pthread_create(&thread_handle, NULL, func, ptr);
+	if (err != 0){
+		fprintf(stderr, "func create fail...\n");
+	}
+	pthread_detach(thread_handle);//分离创建的线程，线程退出后资源自动回收
+}
+
+#endif
+
+MyCreateThread::~MyCreateThread()
+{
+
+#ifdef WIN32
+	CloseHandle(thread_handle);
+#else
+
+
+#endif
+
+
+}

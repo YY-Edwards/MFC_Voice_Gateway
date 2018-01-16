@@ -35,20 +35,22 @@ using namespace std;
 #define						BUFLENGTH								1024
 
 #define						PROTOCOL_HEAD							0x01
-#define						PROTOCOL_PACKAGE_LENGTH							4
+#define						PROTOCOL_PACKAGE_LENGTH					4
 
+#define						MAX_LISTENING_COUNT						65535
 #ifdef WIN32
 typedef  CRITICAL_SECTION GOCRITICAL_SECTION;
 typedef  HANDLE GOMUTEX_T;
 typedef  HANDLE GOSEM_T;
 typedef  HANDLE GOCOND_T;
+typedef  HANDLE GOTHREAD_T;
 
-#define GOTHREADCREATE(x, y, z, q, w, e) _beginthreadex((x), (y), (z), (q), (w), (e))
+//#define GOTHREADCREATE(x, y, z, q, w, e) _beginthreadex((x), (y), (z), (q), (w), (e))
 
 
 #else
-#define GOTHREADCREATE(x, y, z, q, w, e) pthread_create((x), (y), (z), (q))
-
+//#define GOTHREADCREATE(x, y, z, q, w, e) pthread_create((x), (y), (z), (q))
+typedef  int GOTHREAD_T;
 typedef  pthread_mutex_t	GOMUTEX_T;
 typedef  sem_t				GOSEM_T;
 typedef  pthread_cond_t		GOCOND_T;
