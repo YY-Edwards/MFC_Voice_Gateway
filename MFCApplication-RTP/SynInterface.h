@@ -16,6 +16,14 @@
 #include <semaphore.h> 
 #endif
 
+//
+typedef enum {
+	SYN_FAILED		=-2,
+	SYN_ABANDONED	=-1,
+	SYN_OBJECT_o	=0,
+	SYN_TIMEOUT		=1
+} SynInterface_States;
+
 //Ëø½Ó¿ÚÀà  
 class ILock
 {
@@ -68,7 +76,7 @@ private:
 class Mutex : public ILock
 {
 public:
-	Mutex(LPCTSTR lockUniName);
+	Mutex(const char * lockUniName);
 	~Mutex();
 
 	virtual void Lock() const;
@@ -87,8 +95,8 @@ public:
 	MySynSem();
 	~MySynSem();
 
-	virtual int SemWait(int waittime) const = 0;
-	virtual void SemPost() const = 0;
+	virtual int SemWait(int waittime) const;
+	virtual void SemPost() const;
 
 private:
 	GOSEM_T m_sem;
@@ -102,8 +110,8 @@ public:
 	MySynCond ();
 	~MySynCond ();
 
-	virtual int CondWait(int waittime) const = 0;
-	virtual void CondTrigger(bool isbroadcast) const = 0;
+	virtual int CondWait(int waittime) const;
+	virtual void CondTrigger(bool isbroadcast) const;
 
 
 private:

@@ -4,8 +4,12 @@
 #ifndef WIN32
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <pthread.h>
+#include <poll.h>
+#include <signal.h> 
 #else
 #include <winsock2.h>
+#include <process.h>
 #endif // WIN32
 #include <stdlib.h>
 #include <stdio.h>
@@ -34,16 +38,17 @@ using namespace std;
 #define						PROTOCOL_PACKAGE_LENGTH							4
 
 #ifdef WIN32
-//#define GOSPRINTF(x, y, z, m)  sprintf_s((x), (y), (z), (m));
-//#define GOSSCANF(x, y, z)  sscanf_s((x), (y), (z));
 typedef  CRITICAL_SECTION GOCRITICAL_SECTION;
 typedef  HANDLE GOMUTEX_T;
 typedef  HANDLE GOSEM_T;
 typedef  HANDLE GOCOND_T;
 
+#define GOTHREADCREATE(x, y, z, q, w, e) _beginthreadex((x), (y), (z), (q), (w), (e))
+
+
 #else
-//#define GOSPRINTF(x, y, z, m)  sprintf((x), (y), (z), (m));
-//#define GOSSCANF(x, y, z)  sscanf((x), (y), (z));
+#define GOTHREADCREATE(x, y, z, q, w, e) pthread_create((x), (y), (z), (q))
+
 typedef  pthread_mutex_t	GOMUTEX_T;
 typedef  sem_t				GOSEM_T;
 typedef  pthread_cond_t		GOCOND_T;

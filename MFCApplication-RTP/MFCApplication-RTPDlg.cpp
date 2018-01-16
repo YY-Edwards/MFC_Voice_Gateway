@@ -345,14 +345,14 @@ void CMFCApplicationRTPDlg::MasterOnDataFunc(int command, ResponeData data)
 				channel1RTP->RtpParamsInit(CHANNEL1RTPBASEPORT, CHANNEL1RTPDESTPORT, CHANNEL1RTPSSRC);//ÊÇ·ñÒþÊ½ÉèÖÃ£¿
 				channel1RTP->SetCallBackFunc(RTPChannel1OnData);
 
+				fp = fopen("E:\\CloudMusic\\master_recv_voice.pcm", "wb+");
+				if (fp == NULL){
+					printf("fp  fail\n");
+				}
+				fseek(fp, 0, SEEK_SET);
+
 			}
 			TRACE(("set channel1 is:%d\n"), data.channel1_group_id);
-
-			fp = fopen("E:\\CloudMusic\\master_recv_voice.pcm", "wb+");
-			if (fp == NULL){
-				printf("fp  fail\n");
-			}
-			fseek(fp, 0, SEEK_SET);
 
 		}
 

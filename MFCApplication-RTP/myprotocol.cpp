@@ -25,14 +25,26 @@ JProtocol::~JProtocol()
 		Sleep(30);
 	} while ((!(IsListenThreadHasExit())) || (!(IsParseThreadHasExit())));
 
-	CloseHandle(ondata_locker);
-	CloseHandle(listen_thread_handle);
-	CloseHandle(parse_thread_handle);
-	CloseHandle(data_thread_handle);
-	CloseHandle(clientmap_locker);
 	jqueue.ClearQueue();
 	statemap.clear();
 	clientmap.clear();
+
+	/*CloseHandle(ondata_locker);*/
+	//CloseHandle(clientmap_locker);
+	if (ondata_locker != NULL)
+	{
+		delete ondata_locker;
+		ondata_locker = NULL;
+	}
+	if (clientmap_locker != NULL)
+	{
+		delete clientmap_locker;
+		clientmap_locker = NULL;
+	}
+
+	CloseHandle(listen_thread_handle);
+	CloseHandle(parse_thread_handle);
+	CloseHandle(data_thread_handle);
 
 #ifdef WIN32
 	WSACleanup();
@@ -70,8 +82,10 @@ void JProtocol::InitProtocolData()
 	RequestCallBackFunc = NULL;
 
 	//jqueue = new FifoQueue;
-	ondata_locker = CreateMutex(nullptr, FALSE, (LPCWSTR)"ondata");
-	clientmap_locker = CreateMutex(nullptr, FALSE, (LPCWSTR)"clientmap");
+	//ondata_locker = CreateMutex(nullptr, FALSE, (LPCWSTR)"ondata");
+	//clientmap_locker = CreateMutex(nullptr, FALSE, (LPCWSTR)"clientmap");
+	ondata_locker = new CriSection();
+	clientmap_locker = new CriSection();
 
 	//inset states
 	statemap.insert(std::pair<string, int>("Connect", CONNECT));
@@ -122,7 +136,8 @@ void JProtocol::SetCallBackFunc(void(*callBackFunc)(int, ResponeData))
 }
 void JProtocol::onData(void(*func)(int, ResponeData), int command, ResponeData data)
 {
-	WaitForSingleObject(ondata_locker, INFINITE);
+	//WaitForSingleObject(ondata_locker, INFINITE);
+	ondata_locker->Lock();
 	try
 	{
 		func(command, data);
@@ -132,7 +147,8 @@ void JProtocol::onData(void(*func)(int, ResponeData), int command, ResponeData d
 		TRACE(_T("func error...\n"));
 
 	}
-	ReleaseMutex(ondata_locker);
+	ondata_locker->Unlock();
+	//ReleaseMutex(ondata_locker);
 
 }
 void JProtocol::Start()
@@ -202,7 +218,8 @@ void JProtocol::CreateListenThread()
 }
 void JProtocol::CreatProtocolParseThread()
 {
-	parse_thread_handle = (HANDLE)_beginthreadex(NULL, 0, (unsigned int(__stdcall*)(void *))ProtocolParseThread, this, 0, NULL);
+	//parse_thread_handle = (HANDLE)_beginthreadex(NULL, 0, (unsigned int(__stdcall*)(void *))ProtocolParseThread, this, 0, NULL);
+	parse_thread_handle = (HANDLE)GOTHREADCREATE(NULL, 0, (unsigned int(__stdcall*)(void *))ProtocolParseThread, this, 0, NULL);
 	if (parse_thread_handle == NULL)
 	{
 		std::cout << "create thread failed" << std::endl;
@@ -272,15 +289,15 @@ int JProtocol::ProtocolParseThreadFunc()
 	char queue_data[1024];
 	char json_data[512];
 	int len=0;
-	int return_value = -1;
+	int return_value = SYN_ABANDONED;
 	SOCKET client_fd = INVALID_SOCKET;
 	memset(queue_data, 0x00, 1024);
 	memset(json_data, 0x00, 512);
 
-	while ((return_value = jqueue.TakeFromQueue(queue_data, (int&)len, 200)) != WAIT_FAILED)//200ms
+	while ((return_value = jqueue.TakeFromQueue(queue_data, (int&)len, 200)) >= 0)//200ms
 	{
 		if (set_thread_exit_flag)break;
-		if (WAIT_OBJECT_0 == return_value)
+		if (SYN_OBJECT_o == return_value)
 		{
 			/*GOSSCANF(queue_data, "%4D", &client_fd);*/
 			sscanf(queue_data, "%4D", &client_fd);
@@ -334,7 +351,7 @@ int JProtocol::ProtocolParseThreadFunc()
 			memset(queue_data, 0x00, 1024);
 			memset(json_data, 0x00, 512);
 		}
-		else
+		else//timeout
 		{
 			//Sleep(200);//200ms
 		}
@@ -374,15 +391,19 @@ int JProtocol::ListenThreadFunc()
 	}
 	else
 	{
-		WaitForSingleObject(clientmap_locker, INFINITE);
+		//WaitForSingleObject(clientmap_locker, INFINITE);
+		clientmap_locker->Lock();
 		clientmap.insert(std::pair<SOCKET, struct sockaddr_in>(currentclientsoc, remote_addr));//save client info(socketfd,ip,port...) to map
-		ReleaseMutex(clientmap_locker);
+		clientmap_locker->Unlock();
+		//ReleaseMutex(clientmap_locker);
 		return_value = ProcessClient(currentclientsoc);//while(1)
 	}
 	
-	WaitForSingleObject(clientmap_locker, INFINITE);
+	//WaitForSingleObject(clientmap_locker, INFINITE);
+	clientmap_locker->Lock();
 	clientmap.erase(currentclientsoc);
-	ReleaseMutex(clientmap_locker);
+	clientmap_locker->Unlock();
+	//ReleaseMutex(clientmap_locker);
 
 	CloseSocket(currentclientsoc);
 	TRACE(("Erase clientfd ,Close socket and exit listenthread: 0x%x\n"), GetCurrentThreadId());
@@ -622,13 +643,15 @@ int JProtocol::SendDataToTheThirdParty(SOCKET fd, std::string buff)
 	{
 		if (Objsoc == 0)
 		{
-			WaitForSingleObject(clientmap_locker, INFINITE);
+			//WaitForSingleObject(clientmap_locker, INFINITE);
+			clientmap_locker->Lock();
 			for (it = clientmap.begin(); it != clientmap.end(); ++it)
 			{
 				Objsoc = it->first;
 				return_value = PhySocketSendData(Objsoc, phy_fragment.fragment_element, send_len);
 			}
-			ReleaseMutex(clientmap_locker);
+			clientmap_locker->Unlock();
+			//ReleaseMutex(clientmap_locker);
 			/*SOCKET Objsoc =0;
 			WaitForSingleObject(clientmap_locker, INFINITE);
 			Objsoc = clientmap.begin()->first;

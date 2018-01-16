@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include <process.h>
 #include "Common.h"
+#include "SynInterface.h"
 
 using namespace jrtplib;
 using namespace std;
@@ -86,7 +87,8 @@ protected:
 
 		void CheckError(int rtperr);
 
-		HANDLE ondata_locker;
+		//HANDLE ondata_locker;
+		ILock *ondatalock;
 		bool poll_thread_isactive;
 		bool set_thread_exit_flag;
 		bool thread_exited_flag;

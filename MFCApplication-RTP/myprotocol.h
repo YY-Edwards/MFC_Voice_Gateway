@@ -112,8 +112,10 @@ private:
 	bool CloseSocket(SOCKET sockfd);
 	void InitProtocolData();
 
-	HANDLE ondata_locker;
-	HANDLE clientmap_locker;
+	//HANDLE ondata_locker;
+	//HANDLE clientmap_locker;
+	ILock *ondata_locker;
+	ILock *clientmap_locker;
 	//SOCKET currentclientsoc;
 	SOCKET serversoc;
 	struct sockaddr_in my_addr; /* loacl */

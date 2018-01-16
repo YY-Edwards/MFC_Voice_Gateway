@@ -15,7 +15,7 @@
 #include <list>
 #include <queue>
 #include <stdint.h>
-#include <process.h>
+#include "SynInterface.h"
 
 class FifoQueue 
 {
@@ -32,14 +32,14 @@ class FifoQueue
 
 	private:
 		//init mutex
-		GOSEM_T m_hSemaphore;
+		//GOSEM_T m_hSemaphore;
+		//std::queue<char *>  m_queue;
+		//GOCRITICAL_SECTION cs;
 		std::list<char *>  	m_list;
-		std::queue<char *>  m_queue;
 		char fifobuff[20][512];
 		volatile  uint32_t fifo_counter;
-		GOCRITICAL_SECTION cs;
-
-
+		ILock	*queuelock;
+		ISem	*queuesem;
 
 	
 };

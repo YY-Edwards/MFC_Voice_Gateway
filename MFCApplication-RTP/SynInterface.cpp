@@ -62,12 +62,12 @@ void CriSection::Unlock()const
 
 
 
-Mutex::Mutex(LPCTSTR lockUniName)
+Mutex::Mutex(const char * lockUniName)
 {
 
 #ifdef WIN32
 	//lpName第三个参数用来设置互斥量的名称，在多个进程中的线程就是通过名称来确保它们访问的是同一个互斥量
-	m_mutex = CreateMutex(nullptr, FALSE, lockUniName);
+	m_mutex = CreateMutex(nullptr, FALSE, (LPCTSTR)lockUniName);
 #else
 	pthread_mutex_init(&m_mutex, NULL);
 
@@ -136,30 +136,28 @@ int MySynSem::SemWait(int waittime)const
 
 #ifdef WIN32
 	ret = WaitForSingleObject(m_sem, waittime);//等待信号量触发,waittime:/ms
-	if (ret == WAIT_TIMEOUT)
-	{
-		ret = 2;
-	}
-	else if (ret == WAIT_FAILED)
+	if ((ret == WAIT_ABANDONED) || (ret == WAIT_FAILED))
 	{
 		ret = -1;
 	}
-	
+
 #else
 	struct timespec ts;
 	ts.tv_nsec = waittime*1000*1000;
 	ts.tv_sec   = 0;
 	ret=sem_timedwait(&m_sem, &ts);
 	if ((ret < 0) && (errno == ETIMEDOUT))
-		ret = 2;
+	{
+		ret = 1;
+	}
 	else if (ret < 0)
 	{
 		ret = -1;
 	}
-#endif	
 	else
+#endif	
 
-		return ret;
+	return ret;
 }
 void MySynSem::SemPost()const
 {
@@ -175,7 +173,7 @@ void MySynSem::SemPost()const
 
 MySynCond::MySynCond()
 {
-	m_condlock = new Mutex((LPCTSTR)"condlock");
+	m_condlock = new Mutex("condlock");
 
 #ifdef WIN32
 	m_cond = CreateEvent(NULL, FALSE, FALSE, NULL);
@@ -212,15 +210,10 @@ int MySynCond::CondWait(int waittime)const
 
 #ifdef WIN32
 	ret = WaitForSingleObject(m_cond, waittime);//等待信号量触发,waittime:/ms
-	if (ret == WAIT_TIMEOUT)
-	{
-		ret = 2;
-	}
-	else if (ret == WAIT_FAILED)
+	if ((ret == WAIT_ABANDONED) || (ret == WAIT_FAILED))
 	{
 		ret = -1;
 	}
-	else
 
 #else
 
