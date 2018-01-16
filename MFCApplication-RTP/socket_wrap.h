@@ -13,9 +13,6 @@ typedef int HSocket;
 
 #endif  
 
-
-
-
 typedef struct
 {
 	int block;

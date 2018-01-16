@@ -12,6 +12,7 @@
 #include "myrtp.h"
 #include "json.h"
 #include "FifoQueue.h"
+#include "socket_wrap.h"
 
 class JProtocol
 {
@@ -34,38 +35,38 @@ public:
 	/*
 	连接回复:
 	*/
-	void ConnectReply(SOCKET fd, std::string status, std::string reason = "");
+	void ConnectReply(HSocket fd, std::string status, std::string reason = "");
 
 	/*
 	配置回复
 	*/
-	void ConfigReply(SOCKET fd, int channel1_value, int channel2_value);
+	void ConfigReply(HSocket fd, int channel1_value, int channel2_value);
 
 	/*
 	查询回复
 	*/
 
-	void QueryReply(SOCKET fd, int channel1_value, int channel2_value);
+	void QueryReply(HSocket fd, int channel1_value, int channel2_value);
 
 	/*
 	请求发起组呼回复
 	*/
-	void CallRequestReply(SOCKET fd, std::string status, std::string reason);
+	void CallRequestReply(HSocket fd, std::string status, std::string reason);
 
 	/*
 	结束组呼回复
 	*/
-	void CallReleaseReply(SOCKET fd, std::string status, std::string reason);
+	void CallReleaseReply(HSocket fd, std::string status, std::string reason);
 
 	/*
 	组呼开始通知
 	*/
-	void CallStartNotify(SOCKET fd, int src, int dst, std::string channel);
+	void CallStartNotify(HSocket fd, int src, int dst, std::string channel);
 
 	/*
 	组呼结束通知
 	*/
-	void CallEndNotify(SOCKET fd, int src, int dst, std::string channel);
+	void CallEndNotify(HSocket fd, int src, int dst, std::string channel);
 
 	/*
 	关闭服务器端
@@ -82,12 +83,23 @@ public:
 
 private:
 
+	HSocket serversoc;
+	struct sockaddr_in my_addr; /* loacl */
+	//struct sockaddr_in remote_addr; //client_address
+	//socket初始化变量结构体
+	socketoption_t socketoption;
+	/*
+	声明socket接口类
+	*/
+	CSockWrap *mytcp_server;
+
+
 	//回调接口
 	void(*RequestCallBackFunc)(int, ResponeData);//请求类回调
 	//void(*NotifyCallBackFunc)(int, ResponeData);//通知类回调
 	void onData(void(*func)(int, ResponeData), int command, ResponeData data);
 
-	int ProcessClient(SOCKET clientfd);
+	int ProcessClient(HSocket clientfd);
 	void CreateListenThread();
 	void CreatProtocolParseThread();
 	//void CreatDataProcessThread();
@@ -105,7 +117,7 @@ private:
 	/*
 	打包json数据包
 	*/
-	int SendDataToTheThirdParty(SOCKET fd, std::string buff);
+	int SendDataToTheThirdParty(HSocket fd, std::string buff);
 
 	/*
 	socket初始化
@@ -113,7 +125,7 @@ private:
 	bool socketopen;
 	//bool islistenstatus;
 	bool InitSocket();
-	bool CloseSocket(SOCKET sockfd);
+	bool CloseSocket(HSocket sockfd);
 
 	/*
 	初始化成员变量
@@ -124,10 +136,7 @@ private:
 	//HANDLE clientmap_locker;
 	ILock *ondata_locker;
 	ILock *clientmap_locker;
-	//SOCKET currentclientsoc;
-	SOCKET serversoc;
-	struct sockaddr_in my_addr; /* loacl */
-	struct sockaddr_in remote_addr; //client_address
+	//HSocket currentclientsoc;
 
 	//HANDLE listen_thread_handle;
 	//线程接口类指针
@@ -143,11 +152,11 @@ private:
 
 	PROTOCOL_Ctrlr thePROTOCOL_Ctrlr;//协议结构
 	std::map <std::string, int>  statemap;//状态机
-	std::map <SOCKET, struct sockaddr_in>  clientmap;//save client-info
+	std::map <HSocket, struct sockaddr_in>  clientmap;//save client-info
 
 	bool set_thread_exit_flag;
-	bool listen_thread_exited_flag;
-	bool parse_thread_exited_flag;
+	/*bool listen_thread_exited_flag;
+	bool parse_thread_exited_flag;*/
 	int listen_numb;//监听计数值
 
 	/*
@@ -164,12 +173,12 @@ private:
 	/*
 	打包协议数据
 	*/
-	int PushRecvBuffToQueue(SOCKET clientfd, char *buff, int buff_len);
+	int PushRecvBuffToQueue(HSocket clientfd, char *buff, int buff_len);
 	
 	/*
 	物理层发送协议数据包
 	*/
-	int PhySocketSendData(SOCKET fd, char *buff, int buff_len);
+	int PhySocketSendData(HSocket fd, char *buff, int buff_len);
 
 };
 

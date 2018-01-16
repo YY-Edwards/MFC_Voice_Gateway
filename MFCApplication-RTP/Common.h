@@ -44,13 +44,15 @@ using namespace std;
 #define						PROTOCOL_PACKAGE_LENGTH					4
 
 #define						MAX_LISTENING_COUNT						65535
+#define						TIMEOUT_VALUE							10*1000
+
 #ifdef WIN32
 typedef  CRITICAL_SECTION GOCRITICAL_SECTION;
 typedef  HANDLE GOMUTEX_T;
 typedef  HANDLE GOSEM_T;
 typedef  HANDLE GOCOND_T;
 typedef  HANDLE GOTHREAD_T;
-
+typedef  SOCKET HSocket;
 //#define GOTHREADCREATE(x, y, z, q, w, e) _beginthreadex((x), (y), (z), (q), (w), (e))
 
 
@@ -60,6 +62,9 @@ typedef  int GOTHREAD_T;
 typedef  pthread_mutex_t	GOMUTEX_T;
 typedef  sem_t				GOSEM_T;
 typedef  pthread_cond_t		GOCOND_T;
+typedef int HSocket;
+#define SOCKET_ERROR  (-1)  
+#define INVALID_SOCKET  0  
 
 #endif
 
@@ -67,7 +72,7 @@ typedef  pthread_cond_t		GOCOND_T;
 #pragma pack(1)
 struct ResponeData
 {
-	SOCKET socket_fd;
+	HSocket socket_fd;
 	std::string identifier;
 	//std::string type;
 	//std::string name;
@@ -280,7 +285,7 @@ typedef struct{
 
 typedef struct{
 
-	SOCKET clientfd;//接收数据包的socket描述符，以便于socket发送时时使
+	HSocket clientfd;//接收数据包的socket描述符，以便于socket发送时时使
 	PROTOCOL_Names MASTER_State;
 	//MASTER_States MASTER_State;
 	PROTOCOL_Fixed_Header_t PROTOCOL_Fixed_Header;

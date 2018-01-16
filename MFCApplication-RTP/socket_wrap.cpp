@@ -282,6 +282,11 @@ CSockWrap::~CSockWrap()
 {
 	SocketClose(m_hSocket);
 }
+void CSockWrap::Close()
+{
+	SocketClose(m_hSocket);
+	m_hSocket = INVALIDSOCKHANDLE;
+}
 void CSockWrap::Reopen(bool bForceClose)
 {
 

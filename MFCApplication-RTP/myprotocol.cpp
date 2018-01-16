@@ -82,13 +82,19 @@ void JProtocol::InitProtocolData()
 	WSAStartup(MAKEWORD(2, 2), &dat);//init socket
 #else
 #endif
+	mytcp_server = NULL;
+	socketoption.recvtimeout = TIMEOUT_VALUE;//10s
+	socketoption.sendtimeout = TIMEOUT_VALUE;//10s
+	socketoption.lingertimeout = TIMEOUT_VALUE;
+	socketoption.block = TRUE;
+
 	startfunc_is_finished = false;
 	set_thread_exit_flag = false;
-	listen_thread_exited_flag = false;
-	parse_thread_exited_flag = false;
+	/*listen_thread_exited_flag = false;
+	parse_thread_exited_flag = false;*/
 
 	socketopen = false;
-	serversoc = 0;
+	serversoc = INVALID_SOCKET;
 	listen_numb = 0;
 	memset(listen_thread_p, 0, MAX_LISTENING_COUNT*sizeof(MyCreateThread *));//注意大小问题
 	parse_thread_p = NULL;
@@ -141,10 +147,15 @@ void JProtocol::InitProtocolData()
 }
 void JProtocol::CloseMater()
 {
-	if (socketopen)CloseSocket(serversoc);
-	socketopen = false;
-	//delete jqueue;
-	//jqueue = NULL;
+	if (serversoc != INVALID_SOCKET)
+	{
+		serversoc = INVALID_SOCKET;
+		delete mytcp_server;
+		mytcp_server = NULL;
+	}
+	//if (socketopen)CloseSocket(serversoc);
+	//socketopen = false;
+
 	TRACE(_T("Close Server\n"));
 
 }
@@ -185,6 +196,33 @@ void JProtocol::Start()
 }
 bool JProtocol::InitSocket()
 {
+	if (mytcp_server != NULL)
+	{
+		mytcp_server->Reopen(TRUE);
+	}
+	else
+	{
+		mytcp_server = new CSockWrap(SOCK_STREAM);
+	}
+	serversoc = mytcp_server->GetHandle();
+	GetAddressFrom(&my_addr, 0, TCPPORT);//本地任意IP
+	if (SocketBind(serversoc, &my_addr) == SOCKET_ERROR)
+	{
+		delete mytcp_server;
+		mytcp_server = NULL;
+		serversoc = INVALID_SOCKET;
+		return false;
+	}
+	if (SocketListen(serversoc, 100) != 0)
+	{
+		delete mytcp_server;
+		mytcp_server = NULL;
+		serversoc = INVALID_SOCKET;
+		return false;
+	}
+
+
+	/*
 	if (socketopen)
 	{
 		CloseSocket(serversoc);
@@ -214,6 +252,8 @@ bool JProtocol::InitSocket()
 		return false;
 	}
 	socketopen = true;
+
+	*/
 
 	//CreatDataProcessThread();
 	CreatProtocolParseThread();
@@ -313,7 +353,7 @@ int JProtocol::ProtocolParseThreadFunc()
 	char json_data[512];
 	int len=0;
 	int return_value = SYN_ABANDONED;
-	SOCKET client_fd = INVALID_SOCKET;
+	HSocket client_fd = INVALID_SOCKET;
 	memset(queue_data, 0x00, 1024);
 	memset(json_data, 0x00, 512);
 
@@ -324,7 +364,7 @@ int JProtocol::ProtocolParseThreadFunc()
 		{
 			/*GOSSCANF(queue_data, "%4D", &client_fd);*/
 			sscanf(queue_data, "%4D", &client_fd);
-			memcpy(json_data, &queue_data[sizeof(SOCKET)], sizeof(json_data));
+			memcpy(json_data, &queue_data[sizeof(HSocket)], sizeof(json_data));
 			if (reader.parse(json_data, val))//Parse JSON buff
 			{
 				thePROTOCOL_Ctrlr.clientfd = client_fd;
@@ -397,15 +437,18 @@ int JProtocol::ListenThread(void* p)
 }
 int JProtocol::ListenThreadFunc()
 {
-	int sin_size = 0;
+	//int sin_size = 0;
 	int return_value = 0;
-	sin_size = sizeof(struct sockaddr_in);
-	SOCKET currentclientsoc;
+	//sin_size = sizeof(struct sockaddr_in);
+	HSocket currentclientsoc = INVALID_SOCKET;
+	struct sockaddr_in remote_addr; //client_address
 	
 	TRACE(_T("The server is waiting for the connection \n"));
-	currentclientsoc = accept(serversoc, (sockaddr*)&remote_addr, &sin_size);
+	//currentclientsoc = accept(serversoc, (sockaddr*)&remote_addr, &sin_size);
+	currentclientsoc = SocketAccept(serversoc, (sockaddr_in*)&remote_addr);
 
-	if (socketopen)CreateListenThread();//服务器运行中则继续监听
+	if (serversoc != INVALID_SOCKET)CreateListenThread();//服务器运行中则继续监听
+	//if (socketopen)CreateListenThread();//服务器运行中则继续监听
 
 	if (currentclientsoc == INVALID_SOCKET)
 	{
@@ -416,19 +459,22 @@ int JProtocol::ListenThreadFunc()
 	{
 		//WaitForSingleObject(clientmap_locker, INFINITE);
 		clientmap_locker->Lock();
-		clientmap.insert(std::pair<SOCKET, struct sockaddr_in>(currentclientsoc, remote_addr));//save client info(socketfd,ip,port...) to map
+		clientmap.insert(std::pair<HSocket, struct sockaddr_in>(currentclientsoc, remote_addr));//save client info(socketfd,ip,port...) to map
 		clientmap_locker->Unlock();
 		//ReleaseMutex(clientmap_locker);
 		return_value = ProcessClient(currentclientsoc);//while(1)
+
+		//WaitForSingleObject(clientmap_locker, INFINITE);
+		clientmap_locker->Lock();
+		clientmap.erase(currentclientsoc);
+		clientmap_locker->Unlock();
+		//ReleaseMutex(clientmap_locker);
+
+		SocketClose(currentclientsoc);
+		//CloseSocket(currentclientsoc);
 	}
 	
-	//WaitForSingleObject(clientmap_locker, INFINITE);
-	clientmap_locker->Lock();
-	clientmap.erase(currentclientsoc);
-	clientmap_locker->Unlock();
-	//ReleaseMutex(clientmap_locker);
 
-	CloseSocket(currentclientsoc);
 	TRACE(("Erase clientfd ,Close socket and exit listenthread: 0x%x\n"), GetCurrentThreadId());
 	//listen_thread_exited_flag = true;
 
@@ -436,19 +482,19 @@ int JProtocol::ListenThreadFunc()
 
 }
 
-int JProtocol::PushRecvBuffToQueue(SOCKET clientfd, char *buff, int buff_len)
+int JProtocol::PushRecvBuffToQueue(HSocket clientfd, char *buff, int buff_len)
 {
 	if ((buff_len > 512) || (clientfd == INVALID_SOCKET))return -1;
 	char data[2048];
 	memset(data, 0x00, sizeof(data));
-	/*GOSPRINTF(data, sizeof(SOCKET)+1, "%d", clientfd);*/
+	/*GOSPRINTF(data, sizeof(HSocket)+1, "%d", clientfd);*/
 	sprintf(data, "%d", clientfd);
-	memcpy(&data[sizeof(SOCKET)], buff, buff_len);
-	jqueue.PushToQueue(data, buff_len + sizeof(SOCKET));//push to fifo-buff
+	memcpy(&data[sizeof(HSocket)], buff, buff_len);
+	jqueue.PushToQueue(data, buff_len + sizeof(HSocket));//push to fifo-buff
 	return 0;
 
 }
-int JProtocol::ProcessClient(SOCKET clientfd)
+int JProtocol::ProcessClient(HSocket clientfd)
 {
 	int return_value = 0;
 	int recvTimeout = 10 * 1000;   //10s
@@ -461,7 +507,8 @@ int JProtocol::ProcessClient(SOCKET clientfd)
 
 	//currentclientsoc = clientsoc;
 	//设置RECV超时
-	setsockopt(clientfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&recvTimeout, sizeof(int));
+	SocketTimeOut(clientfd, socketoption.recvtimeout, socketoption.sendtimeout, socketoption.lingertimeout);
+	//setsockopt(clientfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&recvTimeout, sizeof(int));
 	TRACE(_T("Connected\n"));
 	while (!set_thread_exit_flag)
 	{
@@ -595,14 +642,14 @@ int JProtocol::ProcessClient(SOCKET clientfd)
 	return return_value;
 }
 
-bool JProtocol::CloseSocket(SOCKET sockfd)
+bool JProtocol::CloseSocket(HSocket sockfd)
 {
 	closesocket(sockfd);
 	return true;
 
 }
 
-int JProtocol::PhySocketSendData(SOCKET Objsoc, char *buff, int send_len)
+int JProtocol::PhySocketSendData(HSocket Objsoc, char *buff, int send_len)
 {
 	int copy_len = -1;
 	int count = 0;
@@ -629,12 +676,12 @@ int JProtocol::PhySocketSendData(SOCKET Objsoc, char *buff, int send_len)
 
 
 }
-int JProtocol::SendDataToTheThirdParty(SOCKET fd, std::string buff)
+int JProtocol::SendDataToTheThirdParty(HSocket fd, std::string buff)
 {
 	int return_value = 0;
 	int send_len = 0;
-	SOCKET Objsoc = 0;
-	std::map<SOCKET, struct sockaddr_in> ::iterator it;
+	HSocket Objsoc = 0;
+	std::map<HSocket, struct sockaddr_in> ::iterator it;
 
 	stringstream ss;
 	ss<< buff.size();
@@ -675,7 +722,7 @@ int JProtocol::SendDataToTheThirdParty(SOCKET fd, std::string buff)
 			}
 			clientmap_locker->Unlock();
 			//ReleaseMutex(clientmap_locker);
-			/*SOCKET Objsoc =0;
+			/*HSocket Objsoc =0;
 			WaitForSingleObject(clientmap_locker, INFINITE);
 			Objsoc = clientmap.begin()->first;
 			ReleaseMutex(clientmap_locker);*/
@@ -696,7 +743,7 @@ int JProtocol::SendDataToTheThirdParty(SOCKET fd, std::string buff)
 	return return_value;
 }
 
-void JProtocol::ConnectReply(SOCKET dst_fd, std::string status, std::string reason)
+void JProtocol::ConnectReply(HSocket dst_fd, std::string status, std::string reason)
 {
 	
 	Json::Value send_root;
@@ -726,7 +773,7 @@ void JProtocol::ConnectReply(SOCKET dst_fd, std::string status, std::string reas
 	TRACE(_T("Send ConnectReply\n"));
 
 }
-void JProtocol::ConfigReply(SOCKET dst_fd, int channel1_value, int channel2_value)
+void JProtocol::ConfigReply(HSocket dst_fd, int channel1_value, int channel2_value)
 {
 	Json::Value send_root;
 	Json::Value send_arrayObj1;
@@ -783,7 +830,7 @@ void JProtocol::ConfigReply(SOCKET dst_fd, int channel1_value, int channel2_valu
 
 
 }
-void JProtocol::QueryReply(SOCKET dst_fd, int channel1_value, int channel2_value)
+void JProtocol::QueryReply(HSocket dst_fd, int channel1_value, int channel2_value)
 {
 	Json::Value send_root;
 	Json::Value send_arrayObj1;
@@ -829,7 +876,7 @@ void JProtocol::QueryReply(SOCKET dst_fd, int channel1_value, int channel2_value
 	TRACE(_T("Send QueryReply\n"));
 
 }
-void JProtocol::CallRequestReply(SOCKET dst_fd, std::string status, std::string reason)
+void JProtocol::CallRequestReply(HSocket dst_fd, std::string status, std::string reason)
 {
 	Json::Value send_root;
 	Json::Value send_arrayObj;
@@ -854,7 +901,7 @@ void JProtocol::CallRequestReply(SOCKET dst_fd, std::string status, std::string 
 	TRACE(_T("Send CallRequestReply\n"));
 
 }
-void JProtocol::CallReleaseReply(SOCKET dst_fd, std::string status, std::string reason)
+void JProtocol::CallReleaseReply(HSocket dst_fd, std::string status, std::string reason)
 {
 	Json::Value send_root;
 	Json::Value send_arrayObj;
@@ -879,7 +926,7 @@ void JProtocol::CallReleaseReply(SOCKET dst_fd, std::string status, std::string 
 	TRACE(_T("Send CallReleaseReply\n"));
 
 }
-void JProtocol::CallStartNotify(SOCKET dst_fd, int src, int dst, std::string channel)
+void JProtocol::CallStartNotify(HSocket dst_fd, int src, int dst, std::string channel)
 {
 	Json::Value send_root;
 	Json::Value send_arrayObj;
@@ -906,7 +953,7 @@ void JProtocol::CallStartNotify(SOCKET dst_fd, int src, int dst, std::string cha
 	TRACE(_T("Send CallStartNotify\n"));
 
 }
-void JProtocol::CallEndNotify(SOCKET dst_fd, int src, int dst, std::string channel)
+void JProtocol::CallEndNotify(HSocket dst_fd, int src, int dst, std::string channel)
 {
 	Json::Value send_root;
 	Json::Value send_arrayObj;
