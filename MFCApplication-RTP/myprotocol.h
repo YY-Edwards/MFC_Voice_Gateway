@@ -145,31 +145,6 @@ private:
 	设置线程退出标志
 	*/
 	void SetThreadExitFlag()   { set_thread_exit_flag = true; }
-
-	///*
-	//获取监听线程是否退出
-	//*/
-	//bool IsListenThreadHasExit() 
-	//{
-	//	for (int i = 0; i < MAX_LISTENING_COUNT; i++)
-	//	{
-	//		if (listen_thread_p[i])return listen_thread_exited_flag;
-	//	}	
-	//	return true;
-
-	//}
-
-	///*
-	//获取解析线程是否退出
-	//*/
-	//bool IsParseThreadHasExit()
-	//{
-	//	if (parse_thread_p)return parse_thread_exited_flag;
-	//	else
-	//		return true;
-
-	//}
-
 	bool startfunc_is_finished;
 
 	std::string CreateGuid();

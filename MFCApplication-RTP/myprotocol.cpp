@@ -19,13 +19,29 @@ JProtocol::~JProtocol()
 	
 	CloseMater();
 	//WSACleanup();
-	SetThreadExitFlag();
+	SetThreadExitFlag();//通知线程退出
 
-	WaitForSingleObject(parse_thread_p->GetThreadHandle(), INFINITE);
-	for (int i = 0; i < listen_numb; i++)//有待测试
+	if (parse_thread_p != NULL)
 	{
-		WaitForSingleObject(listen_thread_p[i]->GetThreadHandle(), INFINITE);
+		delete parse_thread_p;
+		parse_thread_p = NULL;
+
 	}
+	for (int i = 0; i < MAX_LISTENING_COUNT; i++)
+	{
+		if (listen_thread_p[i] != NULL)
+		{
+			delete listen_thread_p[i];
+			listen_thread_p[i] = NULL;
+		}
+	}
+
+
+	//WaitForSingleObject(parse_thread_p->GetThreadHandle(), INFINITE);
+	//for (int i = 0; i < listen_numb; i++)//有待测试
+	//{
+	//	WaitForSingleObject(listen_thread_p[i]->GetThreadHandle(), INFINITE);
+	//}
 	/*do
 	{
 		Sleep(30);
@@ -48,20 +64,6 @@ JProtocol::~JProtocol()
 		clientmap_locker = NULL;
 	}
 
-	if (parse_thread_p != NULL)
-	{
-		delete parse_thread_p;
-		parse_thread_p = NULL;
-
-	}
-	for (int i = 0; i < MAX_LISTENING_COUNT; i++)
-	{
-		if (listen_thread_p[i]!=NULL)
-		{
-			delete listen_thread_p[i];
-			listen_thread_p[i] = NULL;		
-		}
-	}
 	//CloseHandle(listen_thread_handle);
 	//CloseHandle(parse_thread_handle);
 
@@ -71,12 +73,6 @@ JProtocol::~JProtocol()
 #endif
 	TRACE(_T("Destory: JProtocol \n"));
 
-
-	/*if (jqueue != NULL)
-	{
-		delete jqueue;
-		jqueue = NULL;
-	}*/
 }
 
 void JProtocol::InitProtocolData()
@@ -95,10 +91,6 @@ void JProtocol::InitProtocolData()
 	serversoc = 0;
 	listen_numb = 0;
 	memset(listen_thread_p, 0, MAX_LISTENING_COUNT*sizeof(MyCreateThread *));//注意大小问题
-	//for (int i = 0; i < MAX_LISTENING_COUNT; i++)
-	//{
-	//	listen_thread_p[i] = NULL;
-	//}
 	parse_thread_p = NULL;
 	//islistenstatus = false;
 	//listen_thread_handle = NULL;
@@ -459,7 +451,7 @@ int JProtocol::PushRecvBuffToQueue(SOCKET clientfd, char *buff, int buff_len)
 int JProtocol::ProcessClient(SOCKET clientfd)
 {
 	int return_value = 0;
-	int recvTimeout = 30 * 1000;   //30s
+	int recvTimeout = 10 * 1000;   //10s
 	int recv_length = 0;
 	static int32_t bytes_remained = 0;
 	static uint32_t count = 0;

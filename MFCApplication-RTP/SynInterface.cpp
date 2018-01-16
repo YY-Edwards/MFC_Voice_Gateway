@@ -275,7 +275,7 @@ MyCreateThread::MyCreateThread(pthread_t  *thread, void *func, void *ptr)
 	if (err != 0){
 		fprintf(stderr, "func create fail...\n");
 	}
-	pthread_detach(thread_handle);//分离创建的线程，线程退出后资源自动回收
+	//pthread_detach(thread_handle);//分离创建的线程，线程退出后资源自动回收
 }
 
 #endif
@@ -284,11 +284,15 @@ MyCreateThread::~MyCreateThread()
 {
 
 #ifdef WIN32
+	WaitForSingleObject(thread_handle, INFINITE);
+
 	CloseHandle(thread_handle);
 #else
-
+	pthread_join(thread_handle);//等待回收线程
 
 #endif
+
+	thread_handle = NULL;
 
 
 }
