@@ -97,7 +97,6 @@ private:
 
 	HSocket serversoc;
 	struct sockaddr_in my_addr; /* loacl */
-	//struct sockaddr_in remote_addr; //client_address
 	//socket初始化变量结构体
 	socketoption_t socketoption;
 	/*
@@ -135,7 +134,6 @@ private:
 	socket初始化
 	*/
 	bool socketopen;
-	//bool islistenstatus;
 	bool InitSocket();
 	bool CloseSocket(HSocket sockfd);
 
@@ -144,23 +142,14 @@ private:
 	*/
 	void InitProtocolData();
 
-	//HANDLE ondata_locker;
-	//HANDLE clientmap_locker;
 	ILock *ondata_locker;
 	ILock *stickdismantle_locker;
 	ILock *clientmap_locker;
-	//HSocket currentclientsoc;
 
-	//HANDLE listen_thread_handle;
 	//线程接口类指针
 	MyCreateThread *listen_thread_p[MAX_LISTENING_COUNT];
 
 	MyCreateThread *parse_thread_p;
-	//MyCreateThread *data_thread_p;
-	//HANDLE parse_thread_handle;
-	//HANDLE data_thread_handle;
-
-	//char recvbuf[BUFLENGTH];
 
 	FifoQueue jqueue;//JSON data queue
 
@@ -169,8 +158,6 @@ private:
 	std::map <HSocket, struct sockaddr_in>  clientmap;//save client-info
 
 	bool set_thread_exit_flag;
-	/*bool listen_thread_exited_flag;
-	bool parse_thread_exited_flag;*/
 	int listen_numb;//监听计数值
 
 	/*
@@ -199,8 +186,7 @@ private:
 	*/
 	int StickDismantleProtocol(HSocket fd, char *buff, int len, StickDismantleOptions_t &ptr);
 	
-	//粘包拆包时需要的临时存储变量
-	//char data[BUFLENGTH];
+
 
 };
 

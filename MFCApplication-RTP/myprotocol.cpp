@@ -16,9 +16,7 @@ JProtocol::JProtocol()
 
 JProtocol::~JProtocol()
 {
-	
 	CloseMater();
-	//WSACleanup();
 	SetThreadExitFlag();//通知线程退出
 
 	if (parse_thread_p != NULL)
@@ -36,23 +34,10 @@ JProtocol::~JProtocol()
 		}
 	}
 
-
-	//WaitForSingleObject(parse_thread_p->GetThreadHandle(), INFINITE);
-	//for (int i = 0; i < listen_numb; i++)//有待测试
-	//{
-	//	WaitForSingleObject(listen_thread_p[i]->GetThreadHandle(), INFINITE);
-	//}
-	/*do
-	{
-		Sleep(30);
-	} while ((!(IsListenThreadHasExit())) || (!(IsParseThreadHasExit())));*/
-
 	jqueue.ClearQueue();
 	statemap.clear();
 	clientmap.clear();
 
-	/*CloseHandle(ondata_locker);*/
-	//CloseHandle(clientmap_locker);
 	if (ondata_locker != NULL)
 	{
 		delete ondata_locker;
@@ -69,13 +54,6 @@ JProtocol::~JProtocol()
 		stickdismantle_locker = NULL;
 	}
 
-	//CloseHandle(listen_thread_handle);
-	//CloseHandle(parse_thread_handle);
-
-//#ifdef WIN32
-//	WSACleanup();
-//#else
-//#endif
 	FreeSocketEnvironment();
 	TRACE(_T("Destory: JProtocol \n"));
 
@@ -83,11 +61,6 @@ JProtocol::~JProtocol()
 
 void JProtocol::InitProtocolData()
 {
-//#ifdef WIN32
-//	WSADATA dat;
-//	WSAStartup(MAKEWORD(2, 2), &dat);//init socket
-//#else
-//#endif
 	InitializeSocketEnvironment();
 
 	mytcp_server = NULL;
@@ -98,25 +71,15 @@ void JProtocol::InitProtocolData()
 
 	startfunc_is_finished = false;
 	set_thread_exit_flag = false;
-	/*listen_thread_exited_flag = false;
-	parse_thread_exited_flag = false;*/
 
 	socketopen = false;
 	serversoc = INVALID_SOCKET;
 	listen_numb = 0;
 	memset(listen_thread_p, 0, MAX_LISTENING_COUNT*sizeof(MyCreateThread *));//注意大小问题
 	parse_thread_p = NULL;
-	//islistenstatus = false;
-	//listen_thread_handle = NULL;
-	//parse_thread_handle = NULL;
-	//data_thread_handle = NULL;
-	//memset(recvbuf, 0x00, BUFLENGTH);
-	//memset(data, 0x00, BUFLENGTH);
+
 	RequestCallBackFunc = NULL;
 
-	//jqueue = new FifoQueue;
-	//ondata_locker = CreateMutex(nullptr, FALSE, (LPCWSTR)"ondata");
-	//clientmap_locker = CreateMutex(nullptr, FALSE, (LPCWSTR)"clientmap");
 	ondata_locker = new CriSection();
 	clientmap_locker = new CriSection();
 	stickdismantle_locker = new CriSection();
@@ -163,8 +126,6 @@ void JProtocol::CloseMater()
 		delete mytcp_server;
 		mytcp_server = NULL;
 	}
-	//if (socketopen)CloseSocket(serversoc);
-	//socketopen = false;
 
 	TRACE(_T("Close Server\n"));
 
@@ -281,24 +242,11 @@ void JProtocol::CreateListenThread()
 		listen_thread_p[listen_numb++] = new MyCreateThread(ListenThread, this);
 	}
 
-	//listen_thread_handle = (HANDLE)_beginthreadex(NULL, 0, (unsigned int(__stdcall*)(void *))ListenThread, this, 0, NULL);
-	//if (listen_thread_handle == NULL)
-	//{
-	//	std::cout << "create thread failed" << std::endl;
-	//	system("pause");
-	//}
-
 }
 void JProtocol::CreatProtocolParseThread()
 {
 	parse_thread_p = new MyCreateThread(ProtocolParseThread, this);
-	/*parse_thread_handle = (HANDLE)_beginthreadex(NULL, 0, (unsigned int(__stdcall*)(void *))ProtocolParseThread, this, 0, NULL);
-		if (parse_thread_handle == NULL)
-	{
-		std::cout << "create thread failed" << std::endl;
-		system("pause");
-	}
-*/
+
 }
 
 void JProtocol::DataProcessFunc()
@@ -372,7 +320,6 @@ int JProtocol::ProtocolParseThreadFunc()
 		if (set_thread_exit_flag)break;
 		if (SYN_OBJECT_o == return_value)
 		{
-			/*GOSSCANF(queue_data, "%4D", &client_fd);*/
 			sscanf(queue_data, "%4D", &client_fd);
 			memcpy(json_data, &queue_data[sizeof(HSocket)], sizeof(json_data));
 			if (reader.parse(json_data, val))//Parse JSON buff
@@ -432,7 +379,6 @@ int JProtocol::ProtocolParseThreadFunc()
 	}
 
 	TRACE((" exit ProtocolParseThreadFunc : 0x%x\n"), GetCurrentThreadId());
-	//parse_thread_exited_flag = true;
 	return return_value;
 }
 int JProtocol::ListenThread(void* p)
@@ -447,22 +393,17 @@ int JProtocol::ListenThread(void* p)
 }
 int JProtocol::ListenThreadFunc()
 {
-	//int sin_size = 0;
 	int return_value = 0;
-	//sin_size = sizeof(struct sockaddr_in);
 	HSocket currentclientsoc = INVALID_SOCKET;
 	struct sockaddr_in remote_addr; //client_address
 	
 	TRACE(_T("The server is waiting for the connection \n"));
-	//currentclientsoc = accept(serversoc, (sockaddr*)&remote_addr, &sin_size);
 	currentclientsoc = SocketAccept(serversoc, (sockaddr_in*)&remote_addr);
 
 	if (serversoc != INVALID_SOCKET)CreateListenThread();//服务器运行中则继续监听
-	//if (socketopen)CreateListenThread();//服务器运行中则继续监听
 
 	if (currentclientsoc == INVALID_SOCKET)
 	{
-		//TRACE(_T("accept fail!\n"));
 		return_value = -1;
 		TRACE(("Accept fail! and exit listenthread: 0x%x\n"), GetCurrentThreadId());
 	}
@@ -486,8 +427,6 @@ int JProtocol::ListenThreadFunc()
 		//CloseSocket(currentclientsoc);
 		TRACE(("Erase clientfd ,Close socket and exit ProcessClientFunc: 0x%x\n"), GetCurrentThreadId());
 	}
-	
-	//listen_thread_exited_flag = true;
 
 	return return_value;
 
@@ -508,15 +447,8 @@ int JProtocol::PushRecvBuffToQueue(HSocket clientfd, char *buff, int buff_len)
 int JProtocol::ProcessClient(HSocket clientfd)
 {
 	int return_value = 0;
-	//int recvTimeout = 10 * 1000;   //10s
-	//int recv_length = 0;
-	//static int32_t bytes_remained = 0;
-	//static uint32_t count = 0;
-	//static int32_t pro_length = 0;
 	char recvbuff[BUFLENGTH];
-	//char temp[BUFLENGTH];
 	memset(recvbuff, 0x00, BUFLENGTH);
-	//memset(temp, 0x00, BUFLENGTH);
 	transresult_t rt;
 	StickDismantleOptions_t temp_option;
 	memset(&temp_option, 0x00, sizeof(StickDismantleOptions_t));
@@ -524,10 +456,8 @@ int JProtocol::ProcessClient(HSocket clientfd)
 	std::string len_str;
 	len_str.clear();
 
-	//currentclientsoc = clientsoc;
-	//设置RECV超时
+	//设置clientfd超时
 	SocketTimeOut(clientfd, socketoption.recvtimeout, socketoption.sendtimeout, socketoption.lingertimeout);
-	//setsockopt(clientfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&recvTimeout, sizeof(int));
 	TRACE(_T("Connected\n"));
 	while (!set_thread_exit_flag)
 	{
@@ -545,99 +475,6 @@ int JProtocol::ProcessClient(HSocket clientfd)
 			stickdismantle_locker->Unlock();
 
 			memset(recvbuff, 0, BUFLENGTH);//clear recvbuf[BUFLENGTH];
-		//Start:
-
-		//	if ((recvbuf[0] == PROTOCOL_HEAD) && (recv_length >= 5) && (bytes_remained == 0))//protocol start
-		//	{
-		//		memcpy((void*)len_str.c_str(), &recvbuf[1], PROTOCOL_PACKAGE_LENGTH);
-		//		sscanf(len_str.c_str(), "%D", &pro_length);//string->int
-
-		//		if (recvbuf[5] != '{')
-		//		{
-		//			pro_length = 0;
-		//			count = 0;
-		//			memset(recvbuf, 0, BUFLENGTH);
-		//			continue;
-		//		}
-		//		bytes_remained = pro_length - (recv_length - 5);
-
-		//		if (bytes_remained == 0)
-		//		{
-		//			TRACE(_T("recv_okay\n"));
-		//			PushRecvBuffToQueue(clientfd, &recvbuf[5], pro_length);
-		//			//clear temp
-		//			pro_length = 0;
-		//			count = 0;
-		//			memset(recvbuf, 0, BUFLENGTH);//clear recvbuf[BUFLENGTH];
-		//		}
-		//		else if (bytes_remained > 0)//need  to stick the buff
-		//		{
-		//			TRACE(_T("need to stick the buff\n"));
-		//			count += recv_length;
-		//			//continue;//wait the 
-
-		//		}
-		//		else//recv_length >(pro_length+5) (bytes_remained < 0)//need  to dismantle the buff
-		//		{
-		//			TRACE(_T("need  to dismantle the buff\n"));
-		//			PushRecvBuffToQueue(clientfd, &recvbuf[5], pro_length);
-
-		//			memcpy_s(&recvbuf[0], BUFLENGTH, &recvbuf[pro_length + 5], recv_length - 5 - pro_length);
-		//			memset(&recvbuf[recv_length - pro_length - 5], 0x00, BUFLENGTH - (recv_length - pro_length - 5));
-
-
-		//			recv_length = recv_length - 5 - pro_length;
-		//			bytes_remained = 0;
-		//			count = 0;
-		//			goto Start;
-
-		//		}
-
-		//	}
-		//	else if (bytes_remained >0)
-		//	{
-		//		if (bytes_remained == recv_length)
-		//		{
-		//			TRACE(_T("recv_okay\n"));
-		//			PushRecvBuffToQueue(clientfd, &recvbuf[5], pro_length);
-		//			//clear temp
-		//			pro_length = 0;
-		//			count = 0;
-		//			bytes_remained = 0;
-		//			memset(recvbuf, 0, BUFLENGTH);//clear recvbuf[BUFLENGTH];
-		//		}
-		//		else if (bytes_remained > recv_length)
-		//		{
-		//			TRACE(_T("need to stick the buff-2\n"));
-		//			bytes_remained -= recv_length;
-		//			count += recv_length;
-		//			//continue;//wait the 
-		//		}
-		//		else//bytes_remained < recv_length
-		//		{
-		//			TRACE(_T("need  to dismantle the buff-2\n"));
-		//			PushRecvBuffToQueue(clientfd, &recvbuf[5], pro_length);
-
-		//			memcpy_s(&recvbuf[0], BUFLENGTH, &recvbuf[pro_length + 5], (count + recv_length - pro_length - 5));
-		//			memset(&recvbuf[count + recv_length - pro_length - 5], 0x00, BUFLENGTH - (count + recv_length - pro_length - 5));
-
-		//			recv_length = count + recv_length - pro_length - 5;
-		//			bytes_remained = 0;
-		//			count = 0;
-		//			goto Start;
-
-		//		}
-
-		//	}
-		//	else//bytes_remained < 0
-		//	{
-		//		pro_length = 0;
-		//		count = 0;
-		//		bytes_remained = 0;
-		//		memset(recvbuf, 0, BUFLENGTH);
-		//		SocketClearRecvBuffer(clientfd);
-		//		TRACE(_T("Recv err data and clear temp!!!\n"));
-		//	}
 
 		}
 		else if ((rt.nbytes == -1) && (rt.nresult==1))
@@ -653,131 +490,6 @@ int JProtocol::ProcessClient(HSocket clientfd)
 		else
 		{
 		}
-
-		//if ((recv_length = recv(clientfd, &recvbuf[count], BUFLENGTH, 0)) > 0)
-		//{
-		//	if ((recvbuf[0] == 'Q') && recv_length == 1)
-		//	{
-		//		return_value = 0;
-		//		break;
-		//	}
-
-		//Start:
-
-		//	if ((recvbuf[0] == PROTOCOL_HEAD) && (recv_length >= 5) && (bytes_remained == 0))//protocol start
-		//	{
-		//			memcpy((void*)len_str.c_str(), &recvbuf[1], PROTOCOL_PACKAGE_LENGTH);
-		//			//GOSSCANF(len_str.c_str(), "%D", &pro_length);//string->int
-		//			sscanf(len_str.c_str(), "%D", &pro_length);//string->int
-
-		//			if (recvbuf[5] != '{')
-		//			{
-		//				pro_length = 0;
-		//				count = 0;
-		//				memset(recvbuf, 0, BUFLENGTH);
-		//				continue;
-		//			}
-		//			bytes_remained = pro_length -(recv_length-5);
-
-		//			if (bytes_remained == 0)
-		//			{
-		//				TRACE(_T("recv_okay\n"));
-		//				PushRecvBuffToQueue(clientfd, &recvbuf[5], pro_length);
-		//				//clear temp
-		//				pro_length = 0;
-		//				count = 0;
-		//				memset(recvbuf, 0, BUFLENGTH);//clear recvbuf[BUFLENGTH];
-		//			}
-		//			else if (bytes_remained > 0)//need  to stick the buff
-		//			{
-		//				TRACE(_T("need to stick the buff\n"));
-		//				count += recv_length;
-		//				//continue;//wait the 
-		//			 
-		//			}
-		//			else//recv_length >(pro_length+5) (bytes_remained < 0)//need  to dismantle the buff
-		//			{
-		//				TRACE(_T("need  to dismantle the buff\n"));
-		//				PushRecvBuffToQueue(clientfd, &recvbuf[5], pro_length);
-
-		//				memcpy_s(&recvbuf[0], BUFLENGTH, &recvbuf[pro_length+5], recv_length - 5 - pro_length);
-		//				memset(&recvbuf[recv_length - pro_length - 5], 0x00, BUFLENGTH - (recv_length - pro_length - 5));
-
-
-		//				recv_length = recv_length - 5 - pro_length;
-		//				bytes_remained = 0;
-		//				count = 0;
-		//				goto Start;
-
-		//			}
-
-		//	}
-		//	else if (bytes_remained >0)
-		//	{
-		//		if (bytes_remained == recv_length)
-		//		{
-		//			TRACE(_T("recv_okay\n"));
-		//			PushRecvBuffToQueue(clientfd, &recvbuf[5], pro_length);
-		//			//clear temp
-		//			pro_length = 0;
-		//			count = 0;
-		//			bytes_remained = 0;
-		//			memset(recvbuf, 0, BUFLENGTH);//clear recvbuf[BUFLENGTH];
-		//		}
-		//		else if (bytes_remained > recv_length)
-		//		{
-		//			TRACE(_T("need to stick the buff-2\n"));
-		//			bytes_remained -= recv_length;
-		//			count += recv_length;
-		//			//continue;//wait the 
-		//		}
-		//		else//bytes_remained < recv_length
-		//		{
-		//			TRACE(_T("need  to dismantle the buff-2\n"));
-		//			PushRecvBuffToQueue(clientfd, &recvbuf[5], pro_length);
-
-		//			memcpy_s(&recvbuf[0], BUFLENGTH, &recvbuf[pro_length + 5], (count + recv_length - pro_length - 5));
-		//			memset(&recvbuf[count + recv_length - pro_length - 5], 0x00, BUFLENGTH - (count + recv_length - pro_length - 5));
-
-		//			recv_length = count + recv_length - pro_length - 5;
-		//			bytes_remained = 0;
-		//			count = 0;
-		//			goto Start;
-
-		//		}
-
-		//	}
-		//	else//bytes_remained < 0
-		//	{
-		//		pro_length = 0;
-		//		count = 0;
-		//		bytes_remained = 0;
-		//		memset(recvbuf, 0, BUFLENGTH);
-		//		TRACE(_T("Recv err data and clear temp!!!\n"));
-		//	}
-
-
-		//}
-		//else
-		//{
-		//	if ((recv_length < 0) && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR || errno == 0))
-		//	{
-		//		if (errno == 0)
-		//		{
-		//			TRACE(_T("Timeout\n"));
-		//		}
-		//		continue;
-		//	}
-		//	else
-		//	{
-
-		//		TRACE(_T("Client close socket\n"));
-		//		return_value = -1;
-		//		break;
-		//	}
-		//	
-		//}
-		//
 
 	}
 
@@ -904,7 +616,6 @@ bool JProtocol::CloseSocket(HSocket sockfd)
 
 int JProtocol::PhySocketSendData(HSocket Objsoc, char *buff, int send_len)
 {
-	//int copy_len = -1;
 	int count = 0;
 	transresult_t rt; 
 	rt.nbytes = 0;
@@ -932,24 +643,6 @@ int JProtocol::PhySocketSendData(HSocket Objsoc, char *buff, int send_len)
 
 
 	} while ((send_len - count) != 0);
-
-
-	/*do
-	{
-		copy_len = send(Objsoc, &buff[count], (send_len - count), 0);
-		if (copy_len < 0)
-		{
-			count = -1;
-			TRACE(_T("send SOCKET_ERROR!!!\n"));
-			return count;
-		}
-		else
-		{
-			count += copy_len;
-			TRACE(("send length is %d\n"), copy_len);
-		}
-
-	} while ((send_len - count) != 0);*/
 
 	count = 0;
 	return count;
@@ -993,7 +686,6 @@ int JProtocol::SendDataToTheThirdParty(HSocket fd, std::string buff)
 	{
 		if (Objsoc == 0)
 		{
-			//WaitForSingleObject(clientmap_locker, INFINITE);
 			clientmap_locker->Lock();
 			for (it = clientmap.begin(); it != clientmap.end(); ++it)
 			{
@@ -1001,11 +693,6 @@ int JProtocol::SendDataToTheThirdParty(HSocket fd, std::string buff)
 				return_value = PhySocketSendData(Objsoc, phy_fragment.fragment_element, send_len);
 			}
 			clientmap_locker->Unlock();
-			//ReleaseMutex(clientmap_locker);
-			/*HSocket Objsoc =0;
-			WaitForSingleObject(clientmap_locker, INFINITE);
-			Objsoc = clientmap.begin()->first;
-			ReleaseMutex(clientmap_locker);*/
 
 		}
 		else
