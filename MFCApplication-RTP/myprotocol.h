@@ -14,6 +14,18 @@
 #include "FifoQueue.h"
 #include "socket_wrap.h"
 
+#pragma pack(push, 1)
+typedef struct{
+
+	 int32_t	bytes_remained;
+	 uint32_t	count;
+	 int32_t	pro_length;
+	 char		data[BUFLENGTH];
+
+}StickDismantleOptions_t;
+#pragma pack(pop)
+
+
 class JProtocol
 {
 public:
@@ -135,18 +147,20 @@ private:
 	//HANDLE ondata_locker;
 	//HANDLE clientmap_locker;
 	ILock *ondata_locker;
+	ILock *stickdismantle_locker;
 	ILock *clientmap_locker;
 	//HSocket currentclientsoc;
 
 	//HANDLE listen_thread_handle;
 	//线程接口类指针
 	MyCreateThread *listen_thread_p[MAX_LISTENING_COUNT];
+
 	MyCreateThread *parse_thread_p;
 	//MyCreateThread *data_thread_p;
 	//HANDLE parse_thread_handle;
 	//HANDLE data_thread_handle;
 
-	char recvbuf[BUFLENGTH];
+	//char recvbuf[BUFLENGTH];
 
 	FifoQueue jqueue;//JSON data queue
 
@@ -179,6 +193,14 @@ private:
 	物理层发送协议数据包
 	*/
 	int PhySocketSendData(HSocket fd, char *buff, int buff_len);
+
+	/*
+	协议数据粘包/拆包函数
+	*/
+	int StickDismantleProtocol(HSocket fd, char *buff, int len, StickDismantleOptions_t &ptr);
+	
+	//粘包拆包时需要的临时存储变量
+	//char data[BUFLENGTH];
 
 };
 

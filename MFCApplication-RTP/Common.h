@@ -41,7 +41,7 @@ using namespace std;
 #define						BUFLENGTH								1024
 
 #define						PROTOCOL_HEAD							0x01
-#define						PROTOCOL_PACKAGE_LENGTH					4
+#define						PROTOCOL_PACKAGE_LENGTH_SIZE			4
 
 #define						MAX_LISTENING_COUNT						65535
 #define						TIMEOUT_VALUE							10*1000
